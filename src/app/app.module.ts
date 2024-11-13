@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { NgModule, isDevMode } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http'; // Importa HttpClientModule
@@ -8,6 +8,7 @@ import { LoginComponent } from './login/login.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { DashboardPacienteComponent } from './dashboard-paciente/dashboard-paciente.component';
 import { DashboardTerapeutaComponent } from './dashboard-terapeuta/dashboard-terapeuta.component';
+import { ServiceWorkerModule } from '@angular/service-worker';
 
 @NgModule({
   declarations: [
@@ -21,7 +22,13 @@ import { DashboardTerapeutaComponent } from './dashboard-terapeuta/dashboard-ter
     BrowserModule,
     AppRoutingModule,
     FormsModule,
-    HttpClientModule // Agrega HttpClientModule aquí
+    HttpClientModule,
+    ServiceWorkerModule.register('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      // Register the ServiceWorker as soon as the application is stable
+      // or after 30 seconds (whichever comes first).
+      registrationStrategy: 'registerWhenStable:30000'
+    }) // Agrega HttpClientModule aquí
   ],
   providers: [],
   bootstrap: [AppComponent]
