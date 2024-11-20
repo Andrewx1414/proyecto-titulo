@@ -1,50 +1,53 @@
-import { Component } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
+import { AuthService } from '../auth.service';
 
 @Component({
   selector: 'app-dashboard-terapeuta',
   templateUrl: './dashboard-terapeuta.component.html',
   styleUrls: ['./dashboard-terapeuta.component.css']
 })
-export class DashboardTerapeutaComponent {
-  nombre: string = '';
-  email: string = '';
-  password: string = '';
-  tipoUsuario: string = 'paciente'; // Por defecto es 'paciente'
-  mensaje: string = '';
+export class DashboardTerapeutaComponent implements OnInit {
+  terapeutaNombre: string = '';
+  rutaActiva: string = 'asignar-sesiones';
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute,
+    private authService: AuthService
+  ) {}
 
-  createUser() {
-    const userData = {
-      nombre: this.nombre,
-      email: this.email,
-      password: this.password,
-      usuario: this.tipoUsuario
-    };
+  ngOnInit(): void {
+    // Obtener el usuario autenticado desde AuthService
+    const usuario = this.authService.getUsuario();
+    
+    if (usuario && usuario.tipo_usuario === 'terapeuta') {
+      this.terapeutaNombre = usuario.nombre;
+    } else {
+      // Si no hay usuario o no es terapeuta, redirigir al login
+      this.router.navigate(['/login']);
+      return;
+    }
 
-    this.http.post('http://localhost:3000/api/usuarios', userData).subscribe(
-      (response: any) => {
-        if (response.success) {
-          this.mensaje = 'Usuario creado exitosamente';
-          // Limpiar los campos después de la creación
-          this.nombre = '';
-          this.email = '';
-          this.password = '';
-          this.tipoUsuario = 'paciente';
-        } else {
-          this.mensaje = 'Error al crear el usuario';
-        }
-      },
-      (error) => {
-        this.mensaje = 'Error en el servidor';
-        console.error('Error:', error);
+    // Establecer la ruta activa según la URL actual
+    this.route.url.subscribe(urlSegment => {
+      if (urlSegment.length > 0) {
+        this.rutaActiva = urlSegment[0].path;
       }
-    );
+    });
   }
 
-  logout() {
-    this.router.navigate(['/']);
+  navigateTo(ruta: string): void {
+    // Navegar a la ruta seleccionada, pero solo si no estamos ya en esa ruta
+    if (this.rutaActiva !== ruta) {
+      this.router.navigate([`./${ruta}`], { relativeTo: this.route });
+      this.rutaActiva = ruta; // Actualizar la ruta activa después de navegar
+    }
+  }
+
+  cerrarSesion(): void {
+    // Cerrar sesión y redirigir al login
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

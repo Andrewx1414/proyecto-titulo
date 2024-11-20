@@ -1,0 +1,21 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { EncuestasComponent } from './encuestas.component';
+
+describe('EncuestasComponent', () => {
+  let component: EncuestasComponent;
+  let fixture: ComponentFixture<EncuestasComponent>;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      declarations: [EncuestasComponent]
+    });
+    fixture = TestBed.createComponent(EncuestasComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});

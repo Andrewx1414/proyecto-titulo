@@ -1,1 +1,37 @@
-<p>dashboard-paciente works!</p>
+<div class="dashboard-paciente-container">
+  <div class="header">
+    <h2>Bienvenido {{ pacienteNombre }}!</h2>
+    <button (click)="cerrarSesion()" class="logout-button">Cerrar Sesión</button>
+  </div>
+
+  <!-- Mostrar calendario si mostrarCalendario es verdadero -->
+  <div class="calendar-container" *ngIf="mostrarCalendario">
+    <div class="calendar-header">
+      <button (click)="anteriorMes()">&lt;</button>
+      <h3>{{ mesTexto }}</h3>
+      <button (click)="siguienteMes()">&gt;</button>
+    </div>
+    <div class="calendar-grid">
+      <div class="day" *ngFor="let dia of diasDelMes" 
+           [ngClass]="{'cita': dia.tieneCita}"
+           (click)="abrirModal(dia)">
+        {{ dia.dia }}
+      </div>
+    </div>
+  </div>
+
+ <!-- Modal para mostrar la información de la cita -->
+<div class="modal" *ngIf="mostrarModal">
+  <div class="modal-content">
+    <span class="close-button" (click)="cerrarModal()">&times;</span>
+    <div *ngIf="ejercicioInfo && ejercicioInfo.nombre">
+      <h4>{{ ejercicioInfo.nombre }}</h4>
+      <p>{{ ejercicioInfo.descripcion }}</p>
+      <a *ngIf="ejercicioInfo.video_url" [href]="ejercicioInfo.video_url" target="_blank">Ver video</a>
+    </div>
+    <div *ngIf="!ejercicioInfo || !ejercicioInfo.nombre">
+      <p>Información del ejercicio no disponible</p>
+    </div>
+  </div>
+</div>
+

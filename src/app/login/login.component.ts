@@ -8,7 +8,7 @@ import { Router } from '@angular/router';
   styleUrls: ['./login.component.css']
 })
 export class LoginComponent {
-  username: string = '';
+  email: string = '';
   password: string = '';
   errorMessage: string = '';
 
@@ -17,10 +17,18 @@ export class LoginComponent {
   onSubmit() {
     this.errorMessage = '';
 
-    this.authService.login(this.username, this.password).subscribe(
+    if (this.email.trim() === '' || this.password.trim() === '') {
+      this.errorMessage = 'Por favor, ingrese el correo electrónico y la contraseña.';
+      return;
+    }
+
+    this.authService.login(this.email, this.password).subscribe(
       response => {
         if (response.success) {
-          // Verifica el tipo de usuario y redirige al dashboard correspondiente
+          // Guarda el usuario autenticado en el AuthService
+          this.authService.setUsuario(response.user);
+
+          // Redirige al dashboard correspondiente según el tipo de usuario
           if (response.user.tipo_usuario === 'paciente') {
             this.router.navigate(['/dashboard-paciente']);
           } else if (response.user.tipo_usuario === 'terapeuta') {

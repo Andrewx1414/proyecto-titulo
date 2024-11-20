@@ -1,0 +1,61 @@
+<div class="asignar-sesiones-container">
+    <h2>Asignar Sesiones</h2>
+  
+    <!-- Mostrar mensaje si no hay pacientes -->
+    <div *ngIf="pacientes.length === 0">
+      <p>No hay pacientes asignados.</p>
+    </div>
+  
+    <!-- Mostrar tabla con pacientes si existen pacientes -->
+    <table *ngIf="pacientes.length > 0" class="tabla-pacientes">
+      <thead>
+        <tr>
+          <th>RUT</th>
+          <th>Nombre</th>
+          <th>Apellidos</th>
+          <th>Email</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let paciente of pacientes">
+          <td>{{ paciente.rut }}</td>
+          <td>{{ paciente.nombre }}</td>
+          <td>{{ paciente.apellidos }}</td>
+          <td>{{ paciente.email }}</td>
+          <td>
+            <button class="btn-asignar" (click)="seleccionarPaciente(paciente)">Asignar Sesión</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  
+    <!-- Formulario para asignar una sesión -->
+    <div *ngIf="pacienteSeleccionado" class="formulario-sesion">
+      <h3>Asignar Sesión para: {{ pacienteSeleccionado.nombre }} {{ pacienteSeleccionado.apellidos }}</h3>
+      <form (ngSubmit)="asignarSesion()">
+        <div class="form-group">
+          <label for="fecha">Fecha de la sesión</label>
+          <input type="date" [(ngModel)]="nuevaSesion.fecha" name="fecha" id="fecha" required />
+        </div>
+  
+        <div class="form-group">
+          <label for="descripcion">Descripción de la sesión</label>
+          <input type="text" [(ngModel)]="nuevaSesion.descripcion" name="descripcion" id="descripcion" required />
+        </div>
+  
+        <div class="form-group">
+          <label for="ejercicio_id">Ejercicio</label>
+          <select [(ngModel)]="nuevaSesion.ejercicio_id" name="ejercicio_id" id="ejercicio_id" required>
+            <option *ngFor="let ejercicio of ejercicios" [value]="ejercicio.id">{{ ejercicio.nombre }}</option>
+          </select>
+        </div>
+  
+        <button type="submit" class="btn-asignar">Asignar Sesión</button>
+      </form>
+    </div>
+  
+    <!-- Mostrar mensajes de error -->
+    <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+  </div>
+  
