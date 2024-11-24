@@ -13,7 +13,8 @@ interface Usuario {
   telefono?: string;
   direccion?: string;
   especialidad?: string;
-  terapeuta_id?: number; // Nuevo campo para asociar el paciente al terapeuta
+  terapeuta_id?: number; // Campo para asociar el paciente al terapeuta
+  patologia?: string; // Nuevo campo para pacientes
 }
 
 @Component({
@@ -77,7 +78,7 @@ export class MantenedorUsuariosComponent {
 
     // Validar campos adicionales para pacientes
     if (this.nuevoUsuario.tipo_usuario === 'paciente') {
-      if (!this.nuevoUsuario.fecha_nacimiento || !this.nuevoUsuario.telefono || !this.nuevoUsuario.direccion) {
+      if (!this.nuevoUsuario.fecha_nacimiento || !this.nuevoUsuario.telefono || !this.nuevoUsuario.direccion || !this.nuevoUsuario.patologia) {
         this.errorMessage = 'Por favor, completa todos los campos obligatorios del paciente.';
         return;
       }
@@ -115,6 +116,7 @@ export class MantenedorUsuariosComponent {
         this.errorMessage = error?.error?.message || 'Error al comunicarse con el servidor.';
       }
     );
+    
   }
 
   resetFormulario(): void {

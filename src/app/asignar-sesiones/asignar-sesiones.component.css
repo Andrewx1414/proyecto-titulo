@@ -1,6 +1,6 @@
 /* Contenedor principal */
 .asignar-sesiones-container {
-    max-width: 800px;
+    max-width: 1000px; /* Incrementar el ancho máximo */
     margin: 20px auto;
     padding: 20px;
     background-color: #4a6a75; /* Fondo verde azulado */
@@ -9,10 +9,26 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* Título principal */
-.asignar-sesiones-container h2 {
-    text-align: center;
+/* Título y barra de búsqueda */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
+}
+
+.header-container h2 {
+    margin: 0;
+}
+
+.search-bar {
+    width: 300px; /* Ancho del buscador */
+    padding: 10px;
+    border-radius: 5px;
+    border: none;
+    font-size: 14px;
+    outline: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Tabla de pacientes */
@@ -34,6 +50,12 @@ th, td {
 
 th {
     color: #fff;
+    font-size: 14px; /* Ajuste para texto más legible */
+}
+
+td {
+    font-size: 13px; /* Tamaño más pequeño para datos */
+    word-wrap: break-word; /* Asegura que los textos largos se ajusten */
 }
 
 tr:hover {
@@ -91,4 +113,17 @@ button[type="submit"]:hover {
     margin-top: 10px;
     font-weight: bold;
     text-align: center;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 768px) {
+    .header-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .search-bar {
+        width: 100%; /* Ajustar ancho del buscador */
+    }
 }

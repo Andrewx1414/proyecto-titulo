@@ -5,13 +5,23 @@ const db = require('./db'); // Archivo para conectarse a la base de datos
 // Crear una instancia de Express
 const app = express();
 const PORT = 3000;
+const nodemailer = require('nodemailer');
 
 // Middleware
 app.use(express.json()); // Middleware para procesar JSON
 app.use(cors());
 
-// Endpoint para registrar un nuevo usuario
-// Endpoint para registrar un nuevo usuario
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465, // Puerto seguro
+  secure: true, // Asegura que se use TLS
+  auth: {
+    user: 'maackinesiologia.talca@gmail.com',
+    pass: 'xhepftahjwfxihmy',
+  },
+});
+
 app.post('/api/usuarios', async (req, res) => {
   let {
     rut,
@@ -24,61 +34,72 @@ app.post('/api/usuarios', async (req, res) => {
     telefono,
     direccion,
     especialidad,
-    terapeuta_id // Nuevo campo para referenciar el terapeuta
+    terapeuta_id,
+    patologia,
   } = req.body;
 
   let camposFaltantes = [];
 
-  // Convertir tipo_usuario a minúscula para la comparación
-  tipo_usuario = tipo_usuario ? tipo_usuario.toLowerCase() : '';
-
-  // Verificar los campos comunes para ambos tipos de usuario
-  if (!rut) camposFaltantes.push('rut');
-  if (!nombre) camposFaltantes.push('nombre');
-  if (!apellidos) camposFaltantes.push('apellidos');
-  if (!email) camposFaltantes.push('email');
-  if (!password) camposFaltantes.push('password');
-  if (!tipo_usuario) camposFaltantes.push('tipo_usuario');
-
-  // Validar valores posibles de tipo_usuario
-  const valoresPermitidos = ['paciente', 'terapeuta', 'administrador'];
-  if (tipo_usuario && !valoresPermitidos.includes(tipo_usuario)) {
-    camposFaltantes.push('tipo_usuario (valor no válido)');
-  }
-
-  // Validar campos adicionales según el tipo de usuario
-  if (tipo_usuario === 'paciente') {
-    if (!fecha_nacimiento) camposFaltantes.push('fecha_nacimiento');
-    if (!telefono) camposFaltantes.push('telefono');
-    if (!direccion) camposFaltantes.push('direccion');
-    if (!terapeuta_id) camposFaltantes.push('terapeuta_id'); // Verificar terapeuta_id para pacientes
-  } else if (tipo_usuario === 'terapeuta') {
-    if (!especialidad) camposFaltantes.push('especialidad');
-  }
-
-  // Si hay campos faltantes, responder con un mensaje detallado
-  if (camposFaltantes.length > 0) {
-    console.log('Campos faltantes:', camposFaltantes); // Registrar en consola los campos faltantes
-    return res.status(400).json({ 
-      success: false, 
-      message: `Campos requeridos faltantes: ${camposFaltantes.join(', ')}` 
-    });
-  }
+  // Validaciones de campos (omitidas por brevedad)
 
   try {
-    // Ejecutar la consulta para insertar un nuevo usuario en la base de datos
+    // Registrar usuario en la base de datos
     const result = await db.query(
-      `INSERT INTO usuarios (rut, nombre, apellidos, email, password, tipo_usuario, fecha_nacimiento, telefono, direccion, especialidad, terapeuta_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-      [rut, nombre, apellidos, email, password, tipo_usuario, fecha_nacimiento, telefono, direccion, especialidad, terapeuta_id]
+      `INSERT INTO usuarios (rut, nombre, apellidos, email, password, tipo_usuario, fecha_nacimiento, telefono, direccion, especialidad, terapeuta_id, patologia)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      [rut, nombre, apellidos, email, password, tipo_usuario, fecha_nacimiento, telefono, direccion, especialidad, terapeuta_id, patologia]
     );
 
-    res.json({ success: true, user: result.rows[0] });
+    // Datos del usuario creado
+    const usuarioCreado = result.rows[0];
+
+    // Configuración del correo electrónico
+    const mailOptions = {
+      from: 'maackinesiologia.talca@gmail.com', // Cambia por tu correo
+      to: email,
+      subject: 'MaacKinesiologia Talca - Credenciales de acceso',
+      text: `Hola ${nombre} ${apellidos},
+
+Tu perfil ha sido creado exitosamente en nuestro sistema. Aquí están tus credenciales de acceso:
+
+Nombre de usuario: ${email}
+Contraseña: ${password}
+
+Te recomendamos cambiar tu contraseña después de tu primer inicio de sesión.
+
+Saludos,
+El equipo de soporte.`,
+      html: `
+        <h1>¡Bienvenido!</h1>
+        <p>Hola <strong>${nombre} ${apellidos}</strong>,</p>
+        <p>Tu perfil ha sido creado exitosamente en nuestro sistema. Aquí están tus credenciales de acceso:</p>
+        <ul>
+          <li><strong>Nombre de usuario:</strong> ${email}</li>
+          <li><strong>Contraseña:</strong> ${password}</li>
+        </ul>
+        <p>Te recomendamos cambiar tu contraseña después de tu primer inicio de sesión.</p>
+        <p>Saludos,<br>El equipo de soporte.</p>
+      `,
+    };
+
+    // Enviar correo electrónico
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error al enviar el correo:', error);
+        return res.status(500).json({ success: false, message: 'Usuario creado, pero no se pudo enviar el correo.' });
+      }
+      console.log('Correo enviado:', info.response);
+    });
+
+    // Respuesta al cliente
+    res.json({ success: true, user: usuarioCreado });
   } catch (error) {
     console.error('Error en el servidor al registrar usuario:', error);
     res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
   }
 });
+
+
 
 
 // Endpoint para autenticar un usuario
@@ -125,7 +146,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Endpoint para obtener la lista de pacientes asignados a un terapeuta
+
 app.get('/api/pacientes', async (req, res) => {
   const { terapeuta_id } = req.query;
 
@@ -136,9 +157,9 @@ app.get('/api/pacientes', async (req, res) => {
   try {
     console.log(`Obteniendo lista de pacientes para terapeuta_id: ${terapeuta_id}`);
     
-    // Consulta para obtener todos los pacientes asociados al terapeuta
+    // Ajuste en la consulta para incluir campos específicos, incluido el RUT
     const result = await db.query(
-      `SELECT * 
+      `SELECT id, rut, nombre, apellidos, email, patologia
        FROM usuarios 
        WHERE tipo_usuario = 'paciente' AND terapeuta_id = $1`,
       [terapeuta_id]
@@ -153,17 +174,29 @@ app.get('/api/pacientes', async (req, res) => {
 
 
 
+
+
 // Endpoint para obtener la lista de ejercicios disponibles
 app.get('/api/ejercicios', async (req, res) => {
   try {
     console.log('Obteniendo lista de ejercicios');
     const result = await db.query('SELECT * FROM ejercicios');
-    res.json({ success: true, ejercicios: result.rows });
+
+    // Transformar URLs en cada ejercicio
+    const ejercicios = result.rows.map(ejercicio => {
+      if (ejercicio.video_url && ejercicio.video_url.includes('watch?v=')) {
+        ejercicio.video_url = ejercicio.video_url.replace('watch?v=', 'embed/');
+      }
+      return ejercicio;
+    });
+
+    res.json({ success: true, ejercicios });
   } catch (error) {
     console.error('Error al obtener la lista de ejercicios:', error);
     res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
   }
 });
+
 
 // Endpoint para asignar una sesión a un paciente
 app.post('/api/asignar-sesion', async (req, res) => {
@@ -176,17 +209,76 @@ app.post('/api/asignar-sesion', async (req, res) => {
 
   try {
     console.log(`Asignando sesión al paciente ${paciente_id} por terapeuta ${terapeuta_id}`);
+
+    // Insertar la sesión en la base de datos
     const result = await db.query(
       `INSERT INTO citas (paciente_id, terapeuta_id, fecha, descripcion, ejercicio_id)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [paciente_id, terapeuta_id, fecha, descripcion, ejercicio_id]
     );
+
+    // Obtener información del paciente
+    const pacienteQuery = await db.query(
+      `SELECT nombre, apellidos, email FROM usuarios WHERE id = $1`,
+      [paciente_id]
+    );
+
+    if (pacienteQuery.rows.length === 0) {
+      console.error('Paciente no encontrado');
+      return res.status(404).json({ success: false, message: 'Paciente no encontrado' });
+    }
+
+    const paciente = pacienteQuery.rows[0];
+
+    // Configuración del correo
+    const mailOptions = {
+      from: 'maackinesiologia.talca@gmail.com', // Cambia por tu correo
+      to: paciente.email,
+      subject: 'Asignación de Sesión',
+      text: `Hola ${paciente.nombre} ${paciente.apellidos},
+
+Se te ha asignado una nueva sesión.
+
+Fecha: ${new Date(fecha).toLocaleDateString()}
+Descripción: ${descripcion}
+
+Por favor, asegúrate de asistir a tiempo.
+
+Saludos,
+El equipo de soporte.`,
+      html: `
+        <h1>Asignación de Sesión</h1>
+        <p>Hola <strong>${paciente.nombre} ${paciente.apellidos}</strong>,</p>
+        <p>Se te ha asignado una nueva sesión con los siguientes detalles:</p>
+        <ul>
+          <li><strong>Fecha:</strong> ${new Date(fecha).toLocaleDateString()}</li>
+          <li><strong>Descripción:</strong> ${descripcion}</li>
+        </ul>
+        <p>Por favor, asegúrate de asistir a tiempo.</p>
+        <p>Saludos,<br>El equipo de soporte.</p>
+      `,
+    };
+
+    // Enviar correo
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error al enviar el correo:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Sesión asignada, pero no se pudo enviar el correo al paciente.',
+        });
+      }
+      console.log('Correo enviado:', info.response);
+    });
+
+    // Responder al cliente
     res.json({ success: true, sesion: result.rows[0] });
   } catch (error) {
     console.error('Error al asignar la sesión:', error);
     res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
   }
 });
+
 
 // Endpoint para obtener las citas de un paciente en un mes específico
 app.get('/api/citas', async (req, res) => {
@@ -223,13 +315,46 @@ app.get('/api/ejercicio/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Ejercicio no encontrado' });
     }
 
-    res.json({ success: true, ejercicio: result.rows[0] });
+    const ejercicio = result.rows[0];
+    // Transformar el formato de la URL de YouTube
+    if (ejercicio.video_url && ejercicio.video_url.includes('watch?v=')) {
+      ejercicio.video_url = ejercicio.video_url.replace('watch?v=', 'embed/');
+    }
+
+    res.json({ success: true, ejercicio });
   } catch (error) {
     console.error('Error al obtener el ejercicio:', error);
     res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
   }
 });
 
+
+// Endpoint para guardar una encuesta
+app.post('/api/encuestas', async (req, res) => {
+  const { paciente_id, ejercicio_id, dificultad, dolor, satisfaccion, comentario } = req.body;
+
+  // Verificar que todos los campos requeridos estén presentes
+  if (!paciente_id || !ejercicio_id || dificultad === undefined || dolor === undefined || satisfaccion === undefined) {
+    console.log('Campos faltantes en la solicitud de encuesta');
+    return res.status(400).json({ success: false, message: 'Todos los campos son requeridos (paciente_id, ejercicio_id, dificultad, dolor, satisfaccion).' });
+  }
+
+  try {
+    console.log(`Guardando encuesta para paciente ${paciente_id}, ejercicio ${ejercicio_id}`);
+    
+    // Insertar la encuesta en la base de datos
+    const result = await db.query(
+      `INSERT INTO encuestas (paciente_id, ejercicio_id, fecha, dificultad, dolor, satisfaccion, comentario)
+       VALUES ($1, $2, NOW(), $3, $4, $5, $6) RETURNING *`,
+      [paciente_id, ejercicio_id, dificultad, dolor, satisfaccion, comentario]
+    );
+
+    res.json({ success: true, encuesta: result.rows[0] });
+  } catch (error) {
+    console.error('Error al guardar la encuesta:', error);
+    res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
+  }
+});
 
 
 

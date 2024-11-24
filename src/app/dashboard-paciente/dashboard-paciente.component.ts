@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { PacienteService } from '../paciente.service';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { formatDate } from '@angular/common';
 
 interface Cita {
@@ -24,26 +25,33 @@ export class DashboardPacienteComponent implements OnInit {
   diasDelMes: { dia: number, tieneCita: boolean, ejercicioId?: number | null }[] = [];
   mostrarCalendario: boolean = true;
   mostrarModal: boolean = false;
+  mostrarModalEncuesta: boolean = false; // Nuevo modal para la encuesta
   mesTexto: string = '';
   diaSeleccionado: number | null = null;
   ejercicioInfo: any = null;
+  videoUrl: SafeResourceUrl | null = null; // Para manejar URLs seguras
+  encuesta: { dificultad: number; dolor: number; satisfaccion: number; comentario: string } = {
+    dificultad: 1,
+    dolor: 1,
+    satisfaccion: 1,
+    comentario: ''
+  }; // Modelo de datos para la encuesta
   haIntentadoRedireccionar: boolean = false;
 
   constructor(
     private router: Router,
     private authService: AuthService,
-    private pacienteService: PacienteService
+    private pacienteService: PacienteService,
+    public sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
-    // Verificar si el usuario está autenticado
     this.verificarAutenticacion();
   }
 
   verificarAutenticacion(): void {
     const usuario = this.authService.getUsuario();
     if (usuario && usuario.tipo_usuario === 'paciente') {
-      // Si el usuario autenticado es un paciente, cargar su información
       this.pacienteNombre = usuario.nombre;
       this.pacienteId = usuario.id;
       this.actualizarMes();
@@ -55,14 +63,9 @@ export class DashboardPacienteComponent implements OnInit {
   }
 
   actualizarMes(): void {
-    // Utiliza formatDate para mostrar el mes en español
     this.mesTexto = formatDate(this.mesActual, 'MMMM y', 'es-ES');
-
-    // Obtener los días del mes actual
     const year = this.mesActual.getFullYear();
-    const month = this.mesActual.getMonth() + 1; // Los meses en JavaScript van de 0 a 11, por eso se suma 1.
-
-    // Calcular el número de días en el mes
+    const month = this.mesActual.getMonth() + 1;
     const daysInMonth = new Date(year, month, 0).getDate();
     this.diasDelMes = Array.from({ length: daysInMonth }, (_, i) => ({
       dia: i + 1,
@@ -70,17 +73,13 @@ export class DashboardPacienteComponent implements OnInit {
       ejercicioId: null
     }));
 
-    // Obtener las citas del mes desde el servicio
     if (this.pacienteId) {
       this.pacienteService.obtenerCitasPorMes(this.pacienteId, year, month).subscribe(
         (respuesta: { success: boolean; citas: Cita[] }) => {
           if (respuesta.success && respuesta.citas.length > 0) {
             respuesta.citas.forEach((cita: Cita) => {
-              // Asegúrate de que la fecha sea interpretada correctamente
               const fechaCita = new Date(cita.fecha);
-              const dia = fechaCita.getUTCDate(); // Obtener el día del mes de la fecha de la cita
-
-              // Encuentra el objeto correspondiente al día de la cita y actualiza la información
+              const dia = fechaCita.getUTCDate();
               const diaConCita = this.diasDelMes.find(d => d.dia === dia);
               if (diaConCita) {
                 diaConCita.tieneCita = true;
@@ -116,27 +115,30 @@ export class DashboardPacienteComponent implements OnInit {
       console.log(`Obteniendo información del ejercicio con ID: ${dia.ejercicioId}`);
       this.diaSeleccionado = dia.dia;
 
-      // Obtener información del ejercicio usando el servicio
       this.pacienteService.obtenerEjercicio(dia.ejercicioId).subscribe(
         (respuesta: { success: boolean; ejercicio: any }) => {
           if (respuesta.success) {
-            console.log('Información del ejercicio obtenida:', respuesta.ejercicio); // Añadir log aquí
+            console.log('Información del ejercicio obtenida:', respuesta.ejercicio);
             this.ejercicioInfo = respuesta.ejercicio;
+            this.videoUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.ejercicioInfo.video_url);
           } else {
             console.warn('No se encontró información del ejercicio');
             this.ejercicioInfo = { mensaje: "Ejercicio no encontrado." };
+            this.videoUrl = null;
           }
-          this.mostrarModal = true; // Mostrar el modal después de obtener la información
+          this.mostrarModal = true;
         },
         (error: any) => {
           console.error('Error al obtener información del ejercicio:', error);
           this.ejercicioInfo = { mensaje: "Error al obtener el ejercicio." };
+          this.videoUrl = null;
           this.mostrarModal = true;
         }
       );
     } else {
       console.error('Ejercicio ID inválido o no asignado');
       this.ejercicioInfo = { mensaje: "Ejercicio ID inválido." };
+      this.videoUrl = null;
       this.mostrarModal = true;
     }
   }
@@ -145,5 +147,45 @@ export class DashboardPacienteComponent implements OnInit {
     this.mostrarModal = false;
     this.diaSeleccionado = null;
     this.ejercicioInfo = null;
+    this.videoUrl = null;
+  }
+
+  abrirEncuesta(): void {
+    console.log('Abriendo modal de encuesta...');
+    this.mostrarModalEncuesta = true;
+  }
+
+  cerrarModalEncuesta(): void {
+    console.log('Cerrando modal de encuesta...');
+    this.mostrarModalEncuesta = false;
+    this.encuesta = { dificultad: 1, dolor: 1, satisfaccion: 1, comentario: '' }; // Reiniciar modelo
+  }
+
+  guardarEncuesta(): void {
+    console.log('Guardando encuesta:', this.encuesta);
+
+    if (this.pacienteId && this.ejercicioInfo?.id) {
+      const datosEncuesta = {
+        paciente_id: this.pacienteId,
+        ejercicio_id: this.ejercicioInfo.id,
+        ...this.encuesta
+      };
+
+      this.pacienteService.guardarEncuesta(datosEncuesta).subscribe(
+        (respuesta: { success: boolean; message: string }) => {
+          if (respuesta.success) {
+            console.log('Encuesta guardada con éxito:', respuesta.message);
+            this.cerrarModalEncuesta();
+          } else {
+            console.error('Error al guardar la encuesta:', respuesta.message);
+          }
+        },
+        (error: any) => {
+          console.error('Error en el servidor al guardar la encuesta:', error);
+        }
+      );
+    } else {
+      console.error('Datos insuficientes para guardar la encuesta.');
+    }
   }
 }

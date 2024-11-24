@@ -21,12 +21,14 @@ interface Ejercicio {
   styleUrls: ['./asignar-sesiones.component.css']
 })
 export class AsignarSesionesComponent implements OnInit {
-  pacientes: any[] = [];
+  pacientes: any[] = []; // Lista completa de pacientes
+  pacientesFiltrados: any[] = []; // Lista filtrada de pacientes
   ejercicios: Ejercicio[] = [];
   terapeutaId: number | null = null;
   pacienteSeleccionado: any = null;
   nuevaSesion: Sesion = this.obtenerNuevaSesion();
   errorMessage: string = '';
+  filtro: string = ''; // Campo para el texto del buscador
 
   constructor(private sesionesService: SesionesService, private authService: AuthService) {}
 
@@ -47,8 +49,12 @@ export class AsignarSesionesComponent implements OnInit {
       this.sesionesService.obtenerPacientesPorTerapeuta(this.terapeutaId)
         .subscribe(
           (response) => {
-            this.pacientes = response.pacientes;
-            console.log('Lista de pacientes:', this.pacientes);
+            this.pacientes = response.pacientes.map((paciente: any) => ({
+              ...paciente,
+              patologia: paciente.patologia // Asegurarse de que el campo patología esté incluido
+            }));
+            this.pacientesFiltrados = [...this.pacientes]; // Inicialmente todos los pacientes están filtrados
+            console.log('Lista de pacientes con patologías:', this.pacientes);
           },
           (error) => {
             console.error('Error al obtener la lista de pacientes:', error);
@@ -78,6 +84,7 @@ export class AsignarSesionesComponent implements OnInit {
   seleccionarPaciente(paciente: any): void {
     this.pacienteSeleccionado = paciente;
     this.nuevaSesion = this.obtenerNuevaSesion(); // Reinicia el formulario
+    console.log('Paciente seleccionado:', this.pacienteSeleccionado);
   }
 
   obtenerNuevaSesion(): Sesion {
@@ -120,5 +127,17 @@ export class AsignarSesionesComponent implements OnInit {
           this.errorMessage = 'Error al asignar la sesión.';
         }
       );
+  }
+
+  // Método para filtrar la lista de pacientes
+  filtrarPacientes(): void {
+    const filtroLower = this.filtro.toLowerCase();
+    this.pacientesFiltrados = this.pacientes.filter((paciente) =>
+      paciente.rut.toLowerCase().includes(filtroLower) ||
+      paciente.nombre.toLowerCase().includes(filtroLower) ||
+      paciente.apellidos.toLowerCase().includes(filtroLower) ||
+      paciente.email.toLowerCase().includes(filtroLower) ||
+      (paciente.patologia && paciente.patologia.toLowerCase().includes(filtroLower))
+    );
   }
 }

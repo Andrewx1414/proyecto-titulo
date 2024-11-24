@@ -117,14 +117,24 @@
 
 .modal-content {
     position: relative;
-    background: #fff;
-    padding: 20px;
+    background: #f9f9f9; /* Ajuste del color del fondo del modal para mejor contraste */
+    padding: 25px; /* Incremento del padding para más espacio */
     border-radius: 10px;
-    width: 350px;
-    max-width: 90%;
+    width: 700px; /* Ancho más amplio para el modal */
+    max-width: 90%; /* Asegura que no se desborde en pantallas pequeñas */
     text-align: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    color: #333; /* Texto en color oscuro para el modal */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Sombra para efecto flotante */
+    color: #333; /* Texto oscuro */
+    transition: all 0.3s ease; /* Transición suave */
+}
+
+.modal-content iframe {
+    width: 100%; /* Asegurar que ocupe todo el ancho del contenedor */
+    height: 400px; /* Altura incrementada para mejorar la visualización */
+    border: none; /* Quitar borde predeterminado */
+    border-radius: 8px; /* Bordes redondeados para un diseño uniforme */
+    margin-top: 15px; /* Separación del contenido superior */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Añadir un efecto de sombra */
 }
 
 .close-button {
@@ -153,17 +163,37 @@
     color: #555; /* Texto oscuro */
 }
 
-.modal-content a {
+.post-encuesta-button {
     display: inline-block;
-    padding: 10px 20px;
-    font-size: 14px;
-    background-color: #c49c8d; /* Marrón claro para el botón */
+    margin-top: 20px; /* Separación del botón del iframe */
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #4a6a75; /* Verde azulado */
     color: #fff;
-    border-radius: 5px;
-    text-decoration: none;
-    transition: background-color 0.3s ease;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-.modal-content a:hover {
-    background-color: #a57b6b; /* Marrón más oscuro en hover */
+.post-encuesta-button:hover {
+    background-color: #3b535f; /* Verde más oscuro */
+    transform: scale(1.05); /* Efecto de zoom */
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%; /* Ajuste responsivo para pantallas más pequeñas */
+        padding: 20px;
+    }
+
+    .modal-content iframe {
+        height: 250px; /* Reducir altura en dispositivos pequeños */
+    }
+
+    .post-encuesta-button {
+        font-size: 14px;
+        padding: 10px 20px;
+    }
 }

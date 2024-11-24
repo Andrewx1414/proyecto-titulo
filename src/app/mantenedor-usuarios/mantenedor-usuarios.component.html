@@ -63,6 +63,12 @@
             <input type="text" [(ngModel)]="nuevoUsuario.direccion" name="direccion" id="direccion" placeholder="Ingrese la dirección" />
         </div>
 
+        <!-- Patología (solo para pacientes) -->
+        <div class="form-group" *ngIf="esPaciente">
+            <label for="patologia">Patología</label>
+            <input type="text" [(ngModel)]="nuevoUsuario.patologia" name="patologia" id="patologia" placeholder="Ingrese la patología" />
+        </div>
+
         <!-- Especialidad (solo para terapeutas) -->
         <div class="form-group" *ngIf="esTerapeuta">
             <label for="especialidad">Especialidad</label>

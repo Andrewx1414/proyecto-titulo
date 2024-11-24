@@ -26,12 +26,18 @@ interface RespuestaEjercicio {
   };
 }
 
+interface RespuestaEncuesta {
+  success: boolean;
+  message: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class PacienteService {
   private apiUrlCitas = 'http://localhost:3000/api/citas'; // Endpoint para citas
-  private apiUrlEjercicio = 'http://localhost:3000/api/ejercicio'; // Endpoint actualizado para ejercicios
+  private apiUrlEjercicio = 'http://localhost:3000/api/ejercicio'; // Endpoint para ejercicios
+  private apiUrlEncuestas = 'http://localhost:3000/api/encuestas'; // Endpoint para encuestas
 
   constructor(private http: HttpClient) {}
 
@@ -43,14 +49,28 @@ export class PacienteService {
       );
   }
 
-  obtenerEjercicio(id: number): Observable<any> {
-    return this.http.get<any>(`${this.apiUrlEjercicio}/${id}`)
+  // Obtener información de un ejercicio específico
+  obtenerEjercicio(id: number): Observable<RespuestaEjercicio> {
+    return this.http.get<RespuestaEjercicio>(`${this.apiUrlEjercicio}/${id}`)
       .pipe(
         catchError(this.manejarError)
       );
   }
-  
 
+  // Guardar una encuesta en el servidor
+  guardarEncuesta(encuesta: {
+    paciente_id: number;
+    ejercicio_id: number;
+    dificultad: number;
+    dolor: number;
+    satisfaccion: number;
+    comentario: string;
+  }): Observable<RespuestaEncuesta> {
+    return this.http.post<RespuestaEncuesta>(this.apiUrlEncuestas, encuesta)
+      .pipe(
+        catchError(this.manejarError)
+      );
+  }
 
   // Método privado para manejar errores
   private manejarError(error: HttpErrorResponse): Observable<never> {
