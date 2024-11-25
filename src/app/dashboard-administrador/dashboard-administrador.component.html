@@ -1,0 +1,19 @@
+<div class="dashboard-container">
+  <!-- Menú Lateral -->
+  <div class="sidebar">
+    <h2>Bienvenido {{ administradorNombre }}!</h2>
+    <nav>
+      <button (click)="navigateTo('asignar-sesiones')" [ngClass]="{ 'active': rutaActiva === 'asignar-sesiones' }">Asignar Sesiones</button>
+      <button (click)="navigateTo('subir-videos')" [ngClass]="{ 'active': rutaActiva === 'subir-videos' }">Subir Videos</button>
+      <button (click)="navigateTo('mantenedor-usuarios')" [ngClass]="{ 'active': rutaActiva === 'mantenedor-usuarios' }">Mantenedor de Usuarios</button>
+      <button (click)="navigateTo('encuestas')" [ngClass]="{ 'active': rutaActiva === 'encuestas' }">Encuestas</button>
+      <button (click)="navigateTo('datos')" [ngClass]="{ 'active': rutaActiva === 'datos' }">Datos</button>
+    </nav>
+    <button class="logout-button" (click)="cerrarSesion()">Cerrar Sesión</button>
+  </div>
+
+  <!-- Contenido Principal -->
+  <div class="content">
+    <router-outlet></router-outlet>
+  </div>
+</div>

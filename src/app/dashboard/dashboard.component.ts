@@ -1,45 +1,60 @@
-import { Component } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { EstadisticasService } from '../estadisticas.service';
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent {
-  nombre: string = '';
-  email: string = '';
-  password: string = ''; // Cambiado de 'contraseña' a 'password'
-  tipoUsuario: string = 'paciente';
-  mensaje: string = '';
+export class DashboardComponent implements OnInit {
+  estadisticas: any[] = [];
+  estadisticasFiltradas: any[] = [];
+  patologiasSeleccionadas: string[] = [];
 
-  constructor(private http: HttpClient, private router: Router) {}
+  labels: string[] = [];
+  dificultadData: number[] = [];
+  dolorData: number[] = [];
+  satisfaccionData: number[] = [];
 
-  createUser() {
-    const userData = {
-      nombre: this.nombre,
-      email: this.email,
-      password: this.password, // Cambiado de 'contraseña' a 'password'
-      usuario: this.tipoUsuario
-    };
+  constructor(private estadisticasService: EstadisticasService) {}
 
-    this.http.post('http://localhost:3000/api/usuarios', userData).subscribe(
-      (response: any) => {
+  ngOnInit(): void {
+    this.cargarEstadisticasPorPatologia();
+  }
+
+  cargarEstadisticasPorPatologia(): void {
+    this.estadisticasService.getEstadisticasPorPatologia().subscribe(
+      (response) => {
         if (response.success) {
-          this.mensaje = 'Usuario creado exitosamente';
-        } else {
-          this.mensaje = 'Error al crear el usuario';
+          this.estadisticas = response.data;
+          this.estadisticasFiltradas = [...this.estadisticas];
+          this.actualizarDatosDelGrafico();
         }
       },
       (error) => {
-        this.mensaje = 'Error en el servidor';
-        console.error('Error:', error);
+        console.error('Error al cargar estadísticas por patología:', error);
       }
     );
   }
 
-  logout() {
-    this.router.navigate(['/']); // Redirige al usuario a la página de login
+  togglePatologia(patologia: string): void {
+    if (this.patologiasSeleccionadas.includes(patologia)) {
+      this.patologiasSeleccionadas = this.patologiasSeleccionadas.filter(p => p !== patologia);
+    } else {
+      this.patologiasSeleccionadas.push(patologia);
+    }
+
+    this.estadisticasFiltradas = this.patologiasSeleccionadas.length
+      ? this.estadisticas.filter(e => this.patologiasSeleccionadas.includes(e.patologia))
+      : [...this.estadisticas];
+
+    this.actualizarDatosDelGrafico();
+  }
+
+  actualizarDatosDelGrafico(): void {
+    this.labels = this.estadisticasFiltradas.map(e => e.patologia || 'Sin Patología');
+    this.dificultadData = this.estadisticasFiltradas.map(e => e.promedio_dificultad);
+    this.dolorData = this.estadisticasFiltradas.map(e => e.promedio_dolor);
+    this.satisfaccionData = this.estadisticasFiltradas.map(e => e.promedio_satisfaccion);
   }
 }

@@ -16,32 +16,57 @@ export class LoginComponent {
 
   onSubmit() {
     this.errorMessage = '';
-
+  
+    // Validar campos de entrada
     if (this.email.trim() === '' || this.password.trim() === '') {
       this.errorMessage = 'Por favor, ingrese el correo electrónico y la contraseña.';
       return;
     }
-
+  
+    if (!this.email.trim().match(/^\S+@\S+\.\S+$/)) {
+      this.errorMessage = 'Por favor, ingrese un correo electrónico válido.';
+      return;
+    }
+  
     this.authService.login(this.email, this.password).subscribe(
       response => {
         if (response.success) {
-          // Guarda el usuario autenticado en el AuthService
+          // Guarda el usuario autenticado
           this.authService.setUsuario(response.user);
-
-          // Redirige al dashboard correspondiente según el tipo de usuario
-          if (response.user.tipo_usuario === 'paciente') {
+          console.log('Usuario autenticado:', response.user);
+          localStorage.setItem('user', JSON.stringify(response.user));
+          console.log('Usuario almacenado en localStorage:', localStorage.getItem('user'));
+  
+          // Redirige al dashboard correspondiente
+          const userType = response.user.tipo_usuario;
+          console.log('Tipo de usuario recibido:', userType);
+  
+          if (userType === 'paciente') {
+            console.log('Redirigiendo a /dashboard-paciente');
             this.router.navigate(['/dashboard-paciente']);
-          } else if (response.user.tipo_usuario === 'terapeuta') {
+          } else if (userType === 'terapeuta') {
+            console.log('Redirigiendo a /dashboard-terapeuta');
             this.router.navigate(['/dashboard-terapeuta']);
+          } else if (userType === 'administrador') {
+            console.log('Redirigiendo a /dashboard-administrador');
+            this.router.navigate(['/dashboard-administrador']);
+          } else {
+            this.errorMessage = 'Tipo de usuario no reconocido.';
           }
         } else {
           this.errorMessage = 'Usuario o contraseña incorrectos';
         }
       },
       error => {
-        this.errorMessage = 'Ocurrió un error al intentar iniciar sesión. Inténtalo de nuevo más tarde.';
+        if (error.status === 401) {
+          this.errorMessage = 'Usuario o contraseña incorrectos.';
+        } else if (error.status === 500) {
+          this.errorMessage = 'Error interno del servidor. Intente nuevamente más tarde.';
+        } else {
+          this.errorMessage = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
+        }
         console.error('Error de autenticación:', error);
       }
     );
   }
-}
+}  

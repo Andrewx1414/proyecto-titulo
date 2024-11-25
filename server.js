@@ -6,6 +6,8 @@ const db = require('./db'); // Archivo para conectarse a la base de datos
 const app = express();
 const PORT = 3000;
 const nodemailer = require('nodemailer');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 
 // Middleware
 app.use(express.json()); // Middleware para procesar JSON
@@ -23,13 +25,13 @@ const transporter = nodemailer.createTransport({
 });
 
 app.post('/api/usuarios', async (req, res) => {
-  let {
+  const {
+    tipo_usuario,
     rut,
     nombre,
     apellidos,
     email,
     password,
-    tipo_usuario,
     fecha_nacimiento,
     telefono,
     direccion,
@@ -38,64 +40,79 @@ app.post('/api/usuarios', async (req, res) => {
     patologia,
   } = req.body;
 
-  let camposFaltantes = [];
-
-  // Validaciones de campos (omitidas por brevedad)
+  if (!tipo_usuario || !rut || !nombre || !apellidos || !email || !password) {
+    return res.status(400).json({ success: false, message: 'Campos obligatorios faltantes.' });
+  }
 
   try {
-    // Registrar usuario en la base de datos
-    const result = await db.query(
-      `INSERT INTO usuarios (rut, nombre, apellidos, email, password, tipo_usuario, fecha_nacimiento, telefono, direccion, especialidad, terapeuta_id, patologia)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-      [rut, nombre, apellidos, email, password, tipo_usuario, fecha_nacimiento, telefono, direccion, especialidad, terapeuta_id, patologia]
-    );
+    // Hashear la contraseña antes de almacenarla
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Datos del usuario creado
-    const usuarioCreado = result.rows[0];
+    // Insertar el usuario en la base de datos
+    const query = `
+      INSERT INTO usuarios (
+        tipo_usuario, rut, nombre, apellidos, email, password, fecha_nacimiento,
+        telefono, direccion, especialidad, terapeuta_id, patologia
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+      ) RETURNING id;
+    `;
+
+    const values = [
+      tipo_usuario, rut, nombre, apellidos, email, hashedPassword,
+      fecha_nacimiento || null, telefono || null, direccion || null,
+      especialidad || null, terapeuta_id || null, patologia || null,
+    ];
+
+    const result = await db.query(query, values);
 
     // Configuración del correo electrónico
     const mailOptions = {
       from: 'maackinesiologia.talca@gmail.com', // Cambia por tu correo
       to: email,
-      subject: 'MaacKinesiologia Talca - Credenciales de acceso',
+      subject: 'Credenciales de Acceso',
       text: `Hola ${nombre} ${apellidos},
 
-Tu perfil ha sido creado exitosamente en nuestro sistema. Aquí están tus credenciales de acceso:
+Se ha creado una cuenta para ti en nuestro sistema. Estas son tus credenciales de acceso:
 
-Nombre de usuario: ${email}
+Email: ${email}
 Contraseña: ${password}
 
-Te recomendamos cambiar tu contraseña después de tu primer inicio de sesión.
+Por favor, inicia sesión en nuestro sistema utilizando estas credenciales.
 
 Saludos,
-El equipo de soporte.`,
+El equipo de soporte.
+`,
       html: `
-        <h1>¡Bienvenido!</h1>
+        <h1>Credenciales de Acceso</h1>
         <p>Hola <strong>${nombre} ${apellidos}</strong>,</p>
-        <p>Tu perfil ha sido creado exitosamente en nuestro sistema. Aquí están tus credenciales de acceso:</p>
+        <p>Se ha creado una cuenta para ti en nuestro sistema. Estas son tus credenciales de acceso:</p>
         <ul>
-          <li><strong>Nombre de usuario:</strong> ${email}</li>
+          <li><strong>Email:</strong> ${email}</li>
           <li><strong>Contraseña:</strong> ${password}</li>
         </ul>
-        <p>Te recomendamos cambiar tu contraseña después de tu primer inicio de sesión.</p>
+        <p>Por favor, inicia sesión en nuestro sistema utilizando estas credenciales.</p>
         <p>Saludos,<br>El equipo de soporte.</p>
       `,
     };
 
-    // Enviar correo electrónico
+    // Enviar el correo
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.error('Error al enviar el correo:', error);
-        return res.status(500).json({ success: false, message: 'Usuario creado, pero no se pudo enviar el correo.' });
+        return res.status(500).json({
+          success: false,
+          message: 'Usuario creado, pero no se pudo enviar el correo.',
+        });
       }
       console.log('Correo enviado:', info.response);
     });
 
-    // Respuesta al cliente
-    res.json({ success: true, user: usuarioCreado });
+    // Responder al cliente
+    res.json({ success: true, message: 'Usuario registrado exitosamente.', userId: result.rows[0].id });
   } catch (error) {
-    console.error('Error en el servidor al registrar usuario:', error);
-    res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
+    console.error('Error al registrar usuario:', error);
+    res.status(500).json({ success: false, message: 'Error en el servidor.', error: error.message });
   }
 });
 
@@ -104,47 +121,49 @@ El equipo de soporte.`,
 
 // Endpoint para autenticar un usuario
 app.post('/api/login', async (req, res) => {
-  let { email, password } = req.body;
+  const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Email y contraseña son requeridos' });
+    return res.status(400).json({ success: false, message: 'Email y contraseña son requeridos.' });
   }
 
   try {
-    console.log(`Intentando autenticar usuario con email: ${email}`);
-    
-    const result = await db.query(
-      'SELECT * FROM usuarios WHERE email = $1 AND password = $2',
-      [email, password]
-    );
+    const result = await db.query('SELECT * FROM usuarios WHERE email = $1', [email]);
 
-    if (result.rows.length > 0) {
-      const user = result.rows[0];
-      console.log('Usuario autenticado exitosamente:', user);
-      res.json({
-        success: true,
-        user: {
-          id: user.id,
-          tipo_usuario: user.tipo_usuario,
-          nombre: user.nombre,
-          apellidos: user.apellidos,
-          email: user.email,
-          rut: user.rut,
-          fecha_nacimiento: user.fecha_nacimiento,
-          telefono: user.telefono,
-          direccion: user.direccion,
-          especialidad: user.especialidad,
-        }
-      });
-    } else {
-      console.log('Usuario o contraseña incorrectos');
-      res.status(401).json({ success: false, message: 'Usuario o contraseña incorrectos' });
+    if (result.rows.length === 0) {
+      return res.status(401).json({ success: false, message: 'Usuario o contraseña incorrectos.' });
     }
+
+    const user = result.rows[0];
+
+    // Comparar la contraseña ingresada con el hash almacenado
+    const match = await bcrypt.compare(password, user.password);
+
+    if (!match) {
+      return res.status(401).json({ success: false, message: 'Usuario o contraseña incorrectos.' });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        tipo_usuario: user.tipo_usuario,
+        nombre: user.nombre,
+        apellidos: user.apellidos,
+        email: user.email,
+        rut: user.rut,
+        fecha_nacimiento: user.fecha_nacimiento,
+        telefono: user.telefono,
+        direccion: user.direccion,
+        especialidad: user.especialidad,
+      },
+    });
   } catch (error) {
     console.error('Error en el servidor al autenticar usuario:', error);
-    res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
+    res.status(500).json({ success: false, message: 'Error en el servidor.', error: error.message });
   }
 });
+
 
 
 app.get('/api/pacientes', async (req, res) => {
@@ -352,6 +371,46 @@ app.post('/api/encuestas', async (req, res) => {
     res.json({ success: true, encuesta: result.rows[0] });
   } catch (error) {
     console.error('Error al guardar la encuesta:', error);
+    res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
+  }
+});
+
+// Endpoint para obtener datos estadísticos de encuestas
+app.get('/api/encuestas-estadisticas', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        AVG(dificultad) AS promedio_dificultad,
+        AVG(dolor) AS promedio_dolor,
+        AVG(satisfaccion) AS promedio_satisfaccion,
+        COUNT(*) AS total_encuestas
+      FROM encuestas
+    `);
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('Error al obtener estadísticas de encuestas:', error);
+    res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
+  }
+});
+
+app.get('/api/encuestas-por-patologia', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT u.patologia, 
+             AVG(e.dificultad) AS promedio_dificultad,
+             AVG(e.dolor) AS promedio_dolor,
+             AVG(e.satisfaccion) AS promedio_satisfaccion,
+             COUNT(e.id) AS total_encuestas
+      FROM encuestas e
+      INNER JOIN usuarios u ON e.paciente_id = u.id
+      GROUP BY u.patologia
+      ORDER BY u.patologia
+    `);
+
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Error al obtener estadísticas por patología:', error);
     res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
   }
 });

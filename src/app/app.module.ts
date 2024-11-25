@@ -7,7 +7,7 @@ import { RouterModule } from '@angular/router'; // Importar RouterModule
 import { AppComponent } from './app.component';
 import { LoginComponent } from './login/login.component';
 import { DashboardPacienteComponent } from './dashboard-paciente/dashboard-paciente.component';
-import { DashboardTerapeutaComponent } from './dashboard-terapeuta/dashboard-terapeuta.component';
+import { DashboardAdministradorComponent } from './dashboard-administrador/dashboard-administrador.component';
 import { ServiceWorkerModule } from '@angular/service-worker';
 
 import { registerLocaleData } from '@angular/common';
@@ -20,6 +20,9 @@ import { EncuestasComponent } from './encuestas/encuestas.component';
 // Importar los servicios necesarios
 import { UsuarioService } from './usuario.service';
 import { SesionesService } from './sesiones.service';
+import { DashboardTerapeutaComponent } from './dashboard-terapeuta/dashboard-terapeuta.component';
+import { NgChartsModule } from 'ng2-charts';
+import { DashboardComponent } from './dashboard/dashboard.component';
 
 // Registrar locale español
 registerLocaleData(localeEs);
@@ -29,11 +32,13 @@ registerLocaleData(localeEs);
     AppComponent,
     LoginComponent,
     DashboardPacienteComponent,
-    DashboardTerapeutaComponent,
+    DashboardAdministradorComponent,
     AsignarSesionesComponent,
     SubirVideosComponent,
     MantenedorUsuariosComponent,
-    EncuestasComponent
+    EncuestasComponent,
+    DashboardTerapeutaComponent,
+    DashboardComponent // Asegúrate de declarar el componente Dashboard aquí
   ],
   imports: [
     BrowserModule,
@@ -41,6 +46,7 @@ registerLocaleData(localeEs);
     RouterModule, // Añadir RouterModule
     FormsModule,
     HttpClientModule,
+    NgChartsModule, // Importación de gráficos
     ServiceWorkerModule.register('ngsw-worker.js', {
       enabled: true,
       registrationStrategy: 'registerWhenStable:30000'

@@ -3,26 +3,51 @@ import { RouterModule, Routes } from '@angular/router';
 import { LoginComponent } from './login/login.component';
 import { DashboardPacienteComponent } from './dashboard-paciente/dashboard-paciente.component';
 import { DashboardTerapeutaComponent } from './dashboard-terapeuta/dashboard-terapeuta.component';
+import { DashboardAdministradorComponent } from './dashboard-administrador/dashboard-administrador.component';
 import { AsignarSesionesComponent } from './asignar-sesiones/asignar-sesiones.component';
 import { SubirVideosComponent } from './subir-videos/subir-videos.component';
 import { MantenedorUsuariosComponent } from './mantenedor-usuarios/mantenedor-usuarios.component';
 import { EncuestasComponent } from './encuestas/encuestas.component';
+import {DashboardComponent} from './dashboard/dashboard.component'
+
+import { AuthGuard } from './auth.guard'; // Importar el guard
 
 const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' }, // Redirige a login por defecto
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
-  { path: 'dashboard-paciente', component: DashboardPacienteComponent },
-  {
-    path: 'dashboard-terapeuta', component: DashboardTerapeutaComponent,
+  
+  // Rutas protegidas con AuthGuard
+  { path: 'dashboard-paciente', component: DashboardPacienteComponent, canActivate: [AuthGuard] },
+  
+  { 
+    path: 'dashboard-terapeuta', 
+    component: DashboardTerapeutaComponent, 
+    canActivate: [AuthGuard], // Protege el dashboard del terapeuta
     children: [
-      { path: '', redirectTo: 'asignar-sesiones', pathMatch: 'full' }, // Ruta predeterminada para el dashboard del terapeuta
+      { path: '', redirectTo: 'asignar-sesiones', pathMatch: 'full' },
       { path: 'asignar-sesiones', component: AsignarSesionesComponent },
       { path: 'subir-videos', component: SubirVideosComponent },
       { path: 'mantenedor-usuarios', component: MantenedorUsuariosComponent },
       { path: 'encuestas', component: EncuestasComponent }
     ]
   },
-  { path: '**', redirectTo: 'login' } // Ruta comodín para manejar todas las demás rutas no encontradas
+  
+  { 
+    path: 'dashboard-administrador', 
+    component: DashboardAdministradorComponent, 
+    canActivate: [AuthGuard], 
+    children :[
+      { path: '', redirectTo: 'asignar-sesiones', pathMatch: 'full' },
+      { path: 'asignar-sesiones', component: AsignarSesionesComponent },
+      { path: 'subir-videos', component: SubirVideosComponent },
+      { path: 'mantenedor-usuarios', component: MantenedorUsuariosComponent },
+      { path: 'encuestas', component: EncuestasComponent },
+      { path: 'datos', component: DashboardComponent }
+    ]
+  },
+
+  // Ruta comodín para manejar rutas no encontradas
+  { path: '**', redirectTo: '/login' }
 ];
 
 @NgModule({

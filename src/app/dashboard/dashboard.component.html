@@ -1,42 +1,61 @@
-<div class="dashboard-container">
-    <header class="dashboard-header">
-      <h1>Dashboard</h1>
-      <button (click)="logout()">Cerrar sesión</button>
-    </header>
-    <div class="dashboard-content">
-      <nav class="dashboard-sidebar">
-        <ul>
-          <li><a href="#">Inicio</a></li>
-          <li><a href="#">Configuración</a></li>
-          <li><a href="#">Perfil</a></li>
-          <li><a href="#">Ayuda</a></li>
-        </ul>
-      </nav>
-      <main class="dashboard-main">
-        <h2>Crear Usuario</h2>
-        <form (ngSubmit)="createUser()">
-          <label for="nombre">Nombre</label>
-          <input type="text" id="nombre" [(ngModel)]="nombre" name="nombre" required />
-  
-          <label for="email">Email</label>
-          <input type="email" id="email" [(ngModel)]="email" name="email" required />
-  
-          <label for="password">Contraseña</label> <!-- Cambiado de 'contraseña' a 'password' -->
-          <input type="password" id="password" [(ngModel)]="password" name="password" required /> <!-- Cambiado de 'contraseña' a 'password' -->
-  
-          <label for="usuario">Tipo de Usuario</label>
-          <select id="usuario" [(ngModel)]="tipoUsuario" name="usuario" required>
-            <option value="paciente">Paciente</option>
-            <option value="terapeuta">Terapeuta</option>
-          </select>
-  
-          <button type="submit">Crear Usuario</button>
-        </form>
-  
-        <div *ngIf="mensaje" class="mensaje">
-          {{ mensaje }}
-        </div>
-      </main>
+<div>
+  <h2>Estadísticas de Encuestas</h2>
+
+  <!-- Checkboxes para seleccionar patologías -->
+  <div class="filtros">
+    <h3>Filtrar por Patología</h3>
+    <div *ngFor="let item of estadisticas">
+      <label>
+        <input 
+          type="checkbox" 
+          (change)="togglePatologia(item.patologia)" 
+          [checked]="patologiasSeleccionadas.includes(item.patologia)"
+        />
+        {{ item.patologia || 'Sin Patología' }}
+      </label>
     </div>
   </div>
-  
+
+  <!-- Gráfico dinámico -->
+  <div *ngIf="labels.length > 0; else noData">
+    <canvas baseChart
+      [data]="{
+        labels: labels,
+        datasets: [
+          {
+            label: 'Promedio Dificultad',
+            data: dificultadData,
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
+          },
+          {
+            label: 'Promedio Dolor',
+            data: dolorData,
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          },
+          {
+            label: 'Promedio Satisfacción',
+            data: satisfaccionData,
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1
+          }
+        ]
+      }"
+      [options]="{
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }"
+      [type]="'bar'">
+    </canvas>
+  </div>
+
+  <ng-template #noData>
+    <p>No hay datos para mostrar.</p>
+  </ng-template>
+</div>

@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class AuthService {
   private apiUrl = 'http://localhost:3000/api/login';
-  private usuarioKey = 'usuario'; // Clave para el almacenamiento del usuario en localStorage
+  private usuarioKey = 'user'; // Clave consistente para el almacenamiento en localStorage
 
   constructor(private http: HttpClient) {}
 
@@ -30,14 +30,12 @@ export class AuthService {
   // Obtener el terapeuta_id del usuario autenticado (si es un terapeuta)
   getTerapeutaId(): number | null {
     const usuario = this.getUsuario();
-    if (usuario && usuario.tipo_usuario === 'terapeuta') {
-      return usuario.id; // Retornar el terapeuta_id si el usuario es un terapeuta
-    }
-    return null; // Retornar null si no es un terapeuta o si no hay usuario autenticado
+    return usuario && usuario.tipo_usuario === 'terapeuta' ? usuario.id : null;
   }
 
   // Método para cerrar sesión
   logout(): void {
     localStorage.removeItem(this.usuarioKey); // Elimina el usuario guardado en el almacenamiento local
+    console.log('Usuario eliminado de localStorage. Sesión cerrada.');
   }
 }
