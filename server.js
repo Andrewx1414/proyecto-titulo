@@ -24,6 +24,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+const path = require('path');
+
 app.post('/api/usuarios', async (req, res) => {
   const {
     tipo_usuario,
@@ -66,7 +68,7 @@ app.post('/api/usuarios', async (req, res) => {
 
     const result = await db.query(query, values);
 
-    // Configuración del correo electrónico
+    // Configuración del correo electrónico con archivo adjunto
     const mailOptions = {
       from: 'maackinesiologia.talca@gmail.com', // Cambia por tu correo
       to: email,
@@ -78,7 +80,7 @@ Se ha creado una cuenta para ti en nuestro sistema. Estas son tus credenciales d
 Email: ${email}
 Contraseña: ${password}
 
-Por favor, inicia sesión en nuestro sistema utilizando estas credenciales.
+Adjunto encontrarás el manual de usuario para ayudarte a comenzar.
 
 Saludos,
 El equipo de soporte.
@@ -91,9 +93,16 @@ El equipo de soporte.
           <li><strong>Email:</strong> ${email}</li>
           <li><strong>Contraseña:</strong> ${password}</li>
         </ul>
-        <p>Por favor, inicia sesión en nuestro sistema utilizando estas credenciales.</p>
+        <p>Adjunto encontrarás el manual de usuario para ayudarte a comenzar.</p>
         <p>Saludos,<br>El equipo de soporte.</p>
       `,
+      attachments: [
+        {
+          filename: 'manual_de_usuario.mp4',
+          path: 'C:\\Users\\andre\\OneDrive\\Escritorio\\AppKine\\videos\\manual_de_usuario.mp4', // Ruta absoluta
+          contentType: 'video/mp4',
+        },
+      ],
     };
 
     // Enviar el correo
@@ -103,19 +112,26 @@ El equipo de soporte.
         return res.status(500).json({
           success: false,
           message: 'Usuario creado, pero no se pudo enviar el correo.',
+          error: error.message,
         });
       }
       console.log('Correo enviado:', info.response);
-    });
 
-    // Responder al cliente
-    res.json({ success: true, message: 'Usuario registrado exitosamente.', userId: result.rows[0].id });
+      res.status(200).json({
+        success: true,
+        message: 'Usuario registrado exitosamente y correo enviado.',
+        userId: result.rows[0].id,
+      });
+    });
   } catch (error) {
     console.error('Error al registrar usuario:', error);
-    res.status(500).json({ success: false, message: 'Error en el servidor.', error: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor.',
+      error: error.message,
+    });
   }
 });
-
 
 
 
@@ -190,9 +206,6 @@ app.get('/api/pacientes', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
   }
 });
-
-
-
 
 
 // Endpoint para obtener la lista de ejercicios disponibles
@@ -415,7 +428,247 @@ app.get('/api/encuestas-por-patologia', async (req, res) => {
   }
 });
 
+app.delete('/api/usuarios/:id', async (req, res) => {
+  const usuarioId = Number(req.params.id);
 
+  // Validar que el usuarioId sea un número entero positivo
+  if (!Number.isInteger(usuarioId) || usuarioId <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'ID de usuario no proporcionado o inválido.',
+    });
+  }
+
+  try {
+    // Consulta para eliminar el usuario
+    const query = 'DELETE FROM usuarios WHERE id = $1 RETURNING *;';
+    const result = await db.query(query, [usuarioId]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado.',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Usuario eliminado con éxito.',
+      usuario: result.rows[0], // Retorna el usuario eliminado
+    });
+  } catch (error) {
+    console.error('Error al eliminar usuario:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor.',
+      error: error.message,
+    });
+  }
+});
+
+app.put('/api/usuarios/:id', async (req, res) => {
+  const usuarioId = Number(req.params.id);
+
+  // Validar que el usuarioId sea un número entero positivo
+  if (!Number.isInteger(usuarioId) || usuarioId <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'ID de usuario no proporcionado o inválido.',
+    });
+  }
+
+  const {
+    nombre,
+    email,
+    telefono,
+    direccion,
+    patologia,
+    especialidad,
+  } = req.body;
+
+  // Validar que se proporcionen los campos requeridos
+  if (!nombre || !email) {
+    return res.status(400).json({
+      success: false,
+      message: 'Faltan campos obligatorios (nombre, email).',
+    });
+  }
+
+  try {
+    const query = `
+      UPDATE usuarios
+      SET
+        nombre = $1,
+        email = $2,
+        telefono = $3,
+        direccion = $4,
+        patologia = $5,
+        especialidad = $6
+      WHERE id = $7
+      RETURNING *;
+    `;
+
+    const values = [nombre, email, telefono || null, direccion || null, patologia || null, especialidad || null, usuarioId];
+
+    const result = await db.query(query, values);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado.',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Usuario actualizado exitosamente.',
+      usuario: result.rows[0], // Retorna el usuario actualizado
+    });
+  } catch (error) {
+    console.error('Error al actualizar usuario:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor.',
+      error: error.message,
+    });
+  }
+});
+
+app.get('/api/pacientes/:terapeuta_id', async (req, res) => {
+  const terapeutaId = Number(req.params.terapeuta_id);
+
+  if (!Number.isInteger(terapeutaId) || terapeutaId <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'ID del terapeuta no proporcionado o inválido.',
+    });
+  }
+
+  try {
+    const result = await db.query(
+      `SELECT 
+        id, 
+        nombre, 
+        apellidos, 
+        email, 
+        telefono, 
+        direccion, 
+        patologia, 
+        fecha_nacimiento, 
+        rut 
+      FROM usuarios
+      WHERE terapeuta_id = $1 AND tipo_usuario = 'paciente'`,
+      [terapeutaId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontraron pacientes asociados a este terapeuta.',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      pacientes: result.rows, // Devolver todos los campos necesarios
+    });
+  } catch (error) {
+    console.error('Error al obtener pacientes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor.',
+      error: error.message,
+    });
+  }
+});
+
+
+app.put('/api/usuarios/:id', async (req, res) => {
+  const usuarioId = Number(req.params.id);
+
+  if (!Number.isInteger(usuarioId) || usuarioId <= 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'ID de usuario no proporcionado o inválido.',
+    });
+  }
+
+  const {
+    nombre,
+    apellidos,
+    email,
+    telefono,
+    direccion,
+    patologia,
+    especialidad,
+    rut,
+  } = req.body;
+
+  try {
+    const query = `
+      UPDATE usuarios
+      SET
+        nombre = $1,
+        apellidos = $2,
+        email = $3,
+        telefono = $4,
+        direccion = $5,
+        patologia = $6,
+        especialidad = $7,
+        rut = $8
+      WHERE id = $9
+      RETURNING *;
+    `;
+
+    const values = [nombre, apellidos, email, telefono, direccion, patologia, especialidad, rut, usuarioId];
+
+    const result = await db.query(query, values);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado.',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Usuario actualizado exitosamente.',
+      usuario: result.rows[0],
+    });
+  } catch (error) {
+    console.error('Error al actualizar usuario:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en el servidor.',
+      error: error.message,
+    });
+  }
+});
+
+
+app.post('/api/ejercicios', async (req, res) => {
+  const { nombre, descripcion, video_url } = req.body;
+
+  if (!nombre || !descripcion || !video_url) {
+    return res.status(400).json({ success: false, message: 'Todos los campos son obligatorios.' });
+  }
+
+  try {
+    const query = `
+      INSERT INTO ejercicios (nombre, descripcion, video_url)
+      VALUES ($1, $2, $3)
+      RETURNING *;
+    `;
+    const values = [nombre, descripcion, video_url];
+    const result = await db.query(query, values);
+
+    res.status(201).json({ success: true, ejercicio: result.rows[0] });
+  } catch (error) {
+    console.error('Error al insertar ejercicio:', error);
+    res.status(500).json({ success: false, message: 'Error en el servidor.' });
+  }
+});
 
 // Ruta comodín para manejar solicitudes no encontradas
 app.use((req, res) => {

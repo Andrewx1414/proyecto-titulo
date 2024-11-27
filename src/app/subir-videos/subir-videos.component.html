@@ -1,1 +1,31 @@
-<p>subir-videos works!</p>
+<div class="subir-videos-container">
+    <h2>Subir Video de Ejercicio</h2>
+    
+    <form (ngSubmit)="subirVideo()">
+      <!-- Nombre del ejercicio -->
+      <div class="form-group">
+        <label for="nombre">Nombre del Ejercicio</label>
+        <input type="text" id="nombre" [(ngModel)]="nuevoEjercicio.nombre" name="nombre" required placeholder="Ingrese el nombre del ejercicio" />
+      </div>
+      
+      <!-- Descripción -->
+      <div class="form-group">
+        <label for="descripcion">Descripción</label>
+        <textarea id="descripcion" [(ngModel)]="nuevoEjercicio.descripcion" name="descripcion" required placeholder="Ingrese una descripción del ejercicio"></textarea>
+      </div>
+      
+      <!-- URL del Video -->
+      <div class="form-group">
+        <label for="videoUrl">URL del Video</label>
+        <input type="url" id="videoUrl" [(ngModel)]="nuevoEjercicio.video_url" name="videoUrl" required placeholder="Ingrese la URL del video" />
+      </div>
+  
+      <!-- Botón para enviar -->
+      <button type="submit" class="btn-subir">Subir Ejercicio</button>
+      
+      <!-- Mostrar mensajes de error o éxito -->
+      <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+      <div *ngIf="successMessage" class="success-message">{{ successMessage }}</div>
+    </form>
+  </div>
+  

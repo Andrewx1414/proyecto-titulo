@@ -1,13 +1,17 @@
-
-
+require('dotenv').config({ path: './db.env' }); // Indica la ruta del archivo db.env
 const { Pool } = require('pg');
+const fs = require('fs');
 
 const pool = new Pool({
-  user: 'postgres', // Reemplaza con tu usuario de PostgreSQL
-  host: 'localhost',
-  database: 'kine', // Reemplaza con el nombre de tu base de datos
-  password: '1997', // Reemplaza con tu contraseña
-  port: 5432, // Reemplaza si es necesario
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+  ssl: {
+    rejectUnauthorized: true,
+    ca: fs.readFileSync("C:\\Users\\andre\\OneDrive\\Escritorio\\AppKine\\us-east-1-bundle.pem").toString(),
+  },
 });
 
 module.exports = {
