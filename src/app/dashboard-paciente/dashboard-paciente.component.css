@@ -1,199 +1,195 @@
-.dashboard-paciente-container {
-    max-width: 800px;
-    margin: 20px auto;
-    padding: 20px;
-    background-color: #4a6a75; /* Fondo verde azulado */
-    color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    font-family: 'Arial, sans-serif';
+/* Contenedor principal del Dashboard */
+.dashboard-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('/assets/icons/fondo.jpeg') no-repeat center center fixed; /* Ruta de la imagen */
+    background-size: cover; /* Escala la imagen para cubrir todo el fondo */
+    z-index: -1; /* Coloca la imagen detrás de todos los elementos */
 }
 
-.header {
+.dashboard-paciente-container {
+    position: relative;
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 30px;
+    background-color: rgba(0, 51, 25, 0.85); /* Fondo verde oscuro semitransparente */
+    color: #ffffff; /* Texto blanco */
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    font-family: 'Arial, sans-serif';
+    z-index: 1; /* Asegura que el contenedor esté sobre la imagen de fondo */
+}
+
+
+
+  
+  /* Header */
+  .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-.logout-button {
+  }
+  
+  .header h2 {
+    color: #c6f6d5; /* Verde claro */
+    font-weight: normal; /* Títulos sin negrita */
+  }
+  
+  .logout-button {
     padding: 10px 15px;
     font-size: 14px;
-    background-color: #c49c8d; /* Marrón claro */
-    color: #fff;
+    background-color: #3cc479; /* Botón verde */
+    color: #ffffff;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.logout-button:hover {
-    background-color: #a57b6b; /* Marrón más oscuro */
-}
-
-.calendar-container {
+    transition: background-color 0.3s ease;
+  }
+  
+  .logout-button:hover {
+    background-color: #2f855a; /* Verde más oscuro en hover */
+  }
+  
+  /* Calendario */
+  .calendar-container {
     margin-top: 20px;
     text-align: center;
-}
-
-.calendar-header {
+  }
+  
+  .calendar-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #fff; /* Texto blanco para coherencia */
-}
-
-.month-button {
+    color: #ffffff; /* Texto blanco */
+  }
+  
+  .calendar-header h3 {
+    font-weight: normal; /* Títulos sin negrita */
+  }
+  
+  .calendar-nav-button {
     padding: 8px;
-    background-color: #c49c8d; /* Marrón claro */
-    color: #fff;
+    background-color: #3cc479; /* Botón verde */
+    color: #ffffff;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-size: 18px;
     transition: background-color 0.3s ease;
-}
-
-.month-button:hover {
-    background-color: #a57b6b; /* Marrón más oscuro en hover */
-}
-
-.weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 5px;
-    font-weight: bold;
-    margin-top: 10px;
-    color: #fff; /* Color blanco para los nombres de los días */
-}
-
-.calendar-grid {
+  }
+  
+  .calendar-nav-button:hover {
+    background-color: #2f855a; /* Verde más oscuro */
+  }
+  
+  .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 5px;
     margin-top: 10px;
-}
-
-.day {
+  }
+  
+  .day {
     padding: 15px;
-    border: 1px solid #ddd;
+    border: 1px solid #6aa57d; /* Verde medio */
     border-radius: 4px;
-    background-color: rgba(255, 255, 255, 0.2); /* Color neutro con transparencia */
-    cursor: default;
-    transition: background-color 0.3s ease;
-}
-
-.cita {
-    background-color: #c49c8d; /* Marrón claro para días con citas */
-    color: #fff;
-    font-weight: bold;
+    background-color: rgba(240, 255, 244, 0.5); /* Fondo verde claro */
+    color: #00331a; /* Texto verde oscuro */
+    font-weight: bold; /* Letras en negrita */
     cursor: pointer;
     transition: background-color 0.3s ease;
-}
-
-.cita:hover {
-    background-color: #a57b6b; /* Marrón más oscuro en hover */
-}
-
-.weekday, .day {
-    text-align: center;
-    font-size: 16px; /* Tamaño de fuente ajustado */
-}
-
-.modal {
+  }
+  
+  .day:hover {
+    background-color: #c6f6d5; /* Hover más claro */
+  }
+  
+  .cita {
+    background-color: #3cc479; /* Verde para días con cita */
+    color: #ffffff;
+  }
+  
+  /* Modal */
+  .modal {
     position: fixed;
-    left: 0;
     top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.7);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    visibility: visible;
-    opacity: 1;
-    transition: opacity 0.3s ease-in-out;
-}
-
-.modal-content {
+  }
+  
+  .modal-content {
     position: relative;
-    background: #f9f9f9; /* Ajuste del color del fondo del modal para mejor contraste */
-    padding: 25px; /* Incremento del padding para más espacio */
-    border-radius: 10px;
-    width: 700px; /* Ancho más amplio para el modal */
-    max-width: 90%; /* Asegura que no se desborde en pantallas pequeñas */
+    background: #f0fff4; /* Fondo verde claro */
+    padding: 30px;
+    border-radius: 12px;
+    width: 80%;
+    max-width: 700px;
     text-align: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Sombra para efecto flotante */
-    color: #333; /* Texto oscuro */
-    transition: all 0.3s ease; /* Transición suave */
-}
-
-.modal-content iframe {
-    width: 100%; /* Asegurar que ocupe todo el ancho del contenedor */
-    height: 400px; /* Altura incrementada para mejorar la visualización */
-    border: none; /* Quitar borde predeterminado */
-    border-radius: 8px; /* Bordes redondeados para un diseño uniforme */
-    margin-top: 15px; /* Separación del contenido superior */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Añadir un efecto de sombra */
-}
-
-.close-button {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    cursor: pointer;
-    font-size: 1.5em;
-    color: #d9534f;
-    transition: color 0.3s ease;
-}
-
-.close-button:hover {
-    color: #c9302c;
-}
-
-.modal-content h4 {
-    margin-bottom: 10px;
-    font-size: 1.4em;
-    color: #4a6a75; /* Verde azulado para el título del ejercicio */
-}
-
-.modal-content p {
-    margin-bottom: 15px;
-    font-size: 1em;
-    color: #555; /* Texto oscuro */
-}
-
-.post-encuesta-button {
-    display: inline-block;
-    margin-top: 20px; /* Separación del botón del iframe */
-    padding: 12px 24px;
-    font-size: 16px;
-    font-weight: bold;
-    background-color: #4a6a75; /* Verde azulado */
-    color: #fff;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    color: #00331a; /* Texto verde oscuro */
+    font-family: 'Arial, sans-serif';
+  }
+  
+  .modal-content h4 {
+    font-size: 1.8em; /* Tamaño más grande para el título */
+    margin-bottom: 20px;
+    color: #2f855a; /* Verde más oscuro */
+    font-weight: normal; /* Títulos sin negrita */
+  }
+  
+  .modal-content p {
+    font-size: 1.2em; /* Texto descriptivo más grande */
+    margin-bottom: 20px;
+    color: #00331a; /* Verde oscuro */
+    font-weight: bold; /* Descripción en negrita */
+  }
+  
+  .modal-content iframe {
+    width: 100%; /* Ocupa todo el ancho del modal */
+    height: 450px; /* Aumentar altura del reproductor */
+    border: none;
+    border-radius: 10px; /* Bordes redondeados */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Sombra para el reproductor */
+    margin-bottom: 20px; /* Separación con el botón */
+  }
+  
+  .post-encuesta-button {
+    padding: 15px 30px; /* Botón más grande */
+    font-size: 1.2em; /* Texto más grande */
+    font-weight: bold; /* Texto en negrita */
+    background-color: #3cc479; /* Verde */
+    color: #ffffff;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.post-encuesta-button:hover {
-    background-color: #3b535f; /* Verde más oscuro */
+  }
+  
+  .post-encuesta-button:hover {
+    background-color: #2f855a; /* Verde más oscuro en hover */
     transform: scale(1.05); /* Efecto de zoom */
+  }
+  /* Botón para cerrar el modal */
+.close-button {
+    position: absolute; /* Permite posicionarlo dentro del contenedor relativo */
+    top: 15px; /* Ajusta la distancia desde la parte superior */
+    right: 15px; /* Ajusta la distancia desde la parte derecha */
+    font-size: 1.8em; /* Tamaño de fuente grande */
+    color: #ff6b6b; /* Rojo */
+    cursor: pointer; /* Cambia el cursor a un puntero */
+    transition: color 0.3s ease; /* Transición suave para el color */
+    z-index: 10; /* Asegura que esté por encima de otros elementos */
 }
 
-@media (max-width: 768px) {
-    .modal-content {
-        width: 95%; /* Ajuste responsivo para pantallas más pequeñas */
-        padding: 20px;
-    }
-
-    .modal-content iframe {
-        height: 250px; /* Reducir altura en dispositivos pequeños */
-    }
-
-    .post-encuesta-button {
-        font-size: 14px;
-        padding: 10px 20px;
-    }
+.close-button:hover {
+    color: #c53030; /* Rojo más oscuro al pasar el cursor */
 }

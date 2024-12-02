@@ -24,4 +24,19 @@ export class SesionesService {
   asignarSesion(sesion: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/asignar-sesion`, sesion);
   }
+
+  // Método para obtener la lista de sesiones asignadas a un terapeuta
+  obtenerSesionesPorTerapeuta(terapeutaId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/sesiones?terapeuta_id=${terapeutaId}`);
+  }
+
+  // Método para editar una sesión asignada
+  editarSesion(sesionId: number, sesion: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/sesiones/${sesionId}`, sesion);
+  }
+
+  // Método para eliminar una sesión asignada
+  eliminarSesion(sesionId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/sesiones/${sesionId}`);
+  }
 }

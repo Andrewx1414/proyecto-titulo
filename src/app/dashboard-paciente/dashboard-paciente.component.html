@@ -1,92 +1,99 @@
-<div class="dashboard-paciente-container">
-  <div class="header">
-    <h2>Bienvenido {{ pacienteNombre }}!</h2>
-    <button (click)="cerrarSesion()" class="logout-button">Cerrar Sesión</button>
-  </div>
+<div class="dashboard-background">
+  <!-- Imagen de fondo -->
+  <div class="background-image"></div>
 
-  <!-- Mostrar calendario si mostrarCalendario es verdadero -->
-  <div class="calendar-container" *ngIf="mostrarCalendario">
-    <div class="calendar-header">
-      <button (click)="anteriorMes()">&lt;</button>
-      <h3>{{ mesTexto }}</h3>
-      <button (click)="siguienteMes()">&gt;</button>
+  <!-- Contenido principal del Dashboard -->
+  <div class="dashboard-paciente-container">
+    <div class="header">
+      <h2>Bienvenido {{ pacienteNombre }}!</h2>
+      <button (click)="cerrarSesion()" class="logout-button">Cerrar Sesión</button>
     </div>
-    <div class="calendar-grid">
-      <div class="day" *ngFor="let dia of diasDelMes" 
-           [ngClass]="{'cita': dia.tieneCita}"
-           (click)="abrirModal(dia)">
-        {{ dia.dia }}
+
+    <!-- Mostrar calendario si mostrarCalendario es verdadero -->
+    <div class="calendar-container" *ngIf="mostrarCalendario">
+      <div class="calendar-header">
+        <button (click)="anteriorMes()" class="calendar-nav-button">&lt;</button>
+        <h3>{{ mesTexto }}</h3>
+        <button (click)="siguienteMes()" class="calendar-nav-button">&gt;</button>
       </div>
-    </div>
-  </div>
-
-  <!-- Modal para mostrar la información de la cita -->
-  <div class="modal" *ngIf="mostrarModal">
-    <div class="modal-content">
-      <span class="close-button" (click)="cerrarModal()">&times;</span>
-      <div *ngIf="ejercicioInfo && ejercicioInfo.nombre">
-        <h4>{{ ejercicioInfo.nombre }}</h4>
-        <p>{{ ejercicioInfo.descripcion }}</p>
-
-        <!-- Reproductor de video dentro del modal -->
-        <iframe 
-          *ngIf="ejercicioInfo.video_url" 
-          [src]="sanitizer.bypassSecurityTrustResourceUrl(ejercicioInfo.video_url)" 
-          width="100%" 
-          height="315" 
-          frameborder="0" 
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-          allowfullscreen>
-        </iframe>
-
-        <!-- Botón Encuesta Post-Ejercicio -->
-        <button class="post-encuesta-button" (click)="abrirEncuesta()">Encuesta Post-Ejercicio</button>
-      </div>
-      <div *ngIf="!ejercicioInfo || !ejercicioInfo.nombre">
-        <p>Información del ejercicio no disponible</p>
+      <div class="calendar-grid">
+        <div
+          class="day"
+          *ngFor="let dia of diasDelMes"
+          [ngClass]="{ 'cita': dia.tieneCita }"
+          (click)="abrirModal(dia)"
+        >
+          {{ dia.dia }}
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Modal para la encuesta -->
-  <div class="modal" *ngIf="mostrarModalEncuesta">
-    <div class="modal-content">
-      <span class="close-button" (click)="cerrarModalEncuesta()">&times;</span>
-      <h4>Encuesta Post-Ejercicio</h4>
-      <p>Por favor, completa esta breve encuesta sobre tu experiencia.</p>
+    <!-- Modal para mostrar la información de la cita -->
+    <div class="modal" *ngIf="mostrarModal">
+      <div class="modal-content">
+        <span class="close-button" (click)="cerrarModal()">&times;</span>
+        <div *ngIf="ejercicioInfo && ejercicioInfo.nombre">
+          <h4>{{ ejercicioInfo.nombre }}</h4>
+          <p class="info-text">{{ ejercicioInfo.descripcion }}</p>
 
-      <!-- Pregunta: Dificultad -->
-      <div class="form-group">
-        <label for="dificultad">¿Qué tanto te costó realizar el ejercicio? (1: Muy fácil, 7: Muy difícil)</label>
-        <select id="dificultad" [(ngModel)]="encuesta.dificultad" class="form-control">
-          <option *ngFor="let i of [1, 2, 3, 4, 5, 6, 7]" [value]="i">{{ i }}</option>
-        </select>
+          <!-- Reproductor de video dentro del modal -->
+          <iframe
+            *ngIf="ejercicioInfo.video_url"
+            [src]="sanitizer.bypassSecurityTrustResourceUrl(ejercicioInfo.video_url)"
+            class="video-frame"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          ></iframe>
+
+          <!-- Botón Encuesta Post-Ejercicio -->
+          <button class="post-encuesta-button" (click)="abrirEncuesta()">Encuesta Post-Ejercicio</button>
+        </div>
+        <div *ngIf="!ejercicioInfo || !ejercicioInfo.nombre">
+          <p class="info-text">Información del ejercicio no disponible</p>
+        </div>
       </div>
+    </div>
 
-      <!-- Pregunta: Dolor -->
-      <div class="form-group">
-        <label for="dolor">¿Qué nivel de dolor experimentaste durante el ejercicio? (1: Sin dolor, 7: Mucho dolor)</label>
-        <select id="dolor" [(ngModel)]="encuesta.dolor" class="form-control">
-          <option *ngFor="let i of [1, 2, 3, 4, 5, 6, 7]" [value]="i">{{ i }}</option>
-        </select>
+    <!-- Modal para la encuesta -->
+    <div class="modal" *ngIf="mostrarModalEncuesta">
+      <div class="modal-content">
+        <span class="close-button" (click)="cerrarModalEncuesta()">&times;</span>
+        <h4>Encuesta Post-Ejercicio</h4>
+        <p>Por favor, completa esta breve encuesta sobre tu experiencia.</p>
+
+        <!-- Pregunta: Dificultad -->
+        <div class="form-group">
+          <label for="dificultad">¿Qué tanto te costó realizar el ejercicio? (1: Muy fácil, 7: Muy difícil)</label>
+          <select id="dificultad" [(ngModel)]="encuesta.dificultad" class="form-control">
+            <option *ngFor="let i of [1, 2, 3, 4, 5, 6, 7]" [value]="i">{{ i }}</option>
+          </select>
+        </div>
+
+        <!-- Pregunta: Dolor -->
+        <div class="form-group">
+          <label for="dolor">¿Qué nivel de dolor experimentaste durante el ejercicio? (1: Sin dolor, 7: Mucho dolor)</label>
+          <select id="dolor" [(ngModel)]="encuesta.dolor" class="form-control">
+            <option *ngFor="let i of [1, 2, 3, 4, 5, 6, 7]" [value]="i">{{ i }}</option>
+          </select>
+        </div>
+
+        <!-- Pregunta: Satisfacción -->
+        <div class="form-group">
+          <label for="satisfaccion">¿Qué tan satisfecho estás con este ejercicio? (1: Muy insatisfecho, 7: Muy satisfecho)</label>
+          <select id="satisfaccion" [(ngModel)]="encuesta.satisfaccion" class="form-control">
+            <option *ngFor="let i of [1, 2, 3, 4, 5, 6, 7]" [value]="i">{{ i }}</option>
+          </select>
+        </div>
+
+        <!-- Comentario -->
+        <div class="form-group">
+          <label for="comentario">Comentarios adicionales</label>
+          <textarea id="comentario" [(ngModel)]="encuesta.comentario" class="form-control" rows="3" placeholder="Escribe tus comentarios aquí"></textarea>
+        </div>
+
+        <!-- Botón para enviar -->
+        <button class="submit-button" (click)="guardarEncuesta()">Enviar Encuesta</button>
       </div>
-
-      <!-- Pregunta: Satisfacción -->
-      <div class="form-group">
-        <label for="satisfaccion">¿Qué tan satisfecho estás con este ejercicio? (1: Muy insatisfecho, 7: Muy satisfecho)</label>
-        <select id="satisfaccion" [(ngModel)]="encuesta.satisfaccion" class="form-control">
-          <option *ngFor="let i of [1, 2, 3, 4, 5, 6, 7]" [value]="i">{{ i }}</option>
-        </select>
-      </div>
-
-      <!-- Comentario -->
-      <div class="form-group">
-        <label for="comentario">Comentarios adicionales</label>
-        <textarea id="comentario" [(ngModel)]="encuesta.comentario" class="form-control" rows="3" placeholder="Escribe tus comentarios aquí"></textarea>
-      </div>
-
-      <!-- Botón para enviar -->
-      <button class="submit-button" (click)="guardarEncuesta()">Enviar Encuesta</button>
     </div>
   </div>
 </div>

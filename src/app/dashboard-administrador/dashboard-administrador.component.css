@@ -1,25 +1,43 @@
-/* dashboard-terapeuta.component.css */
+/* dashboard-admin.component.css */
 
-/* Contenedor general */
+/* Fondo general */
+body {
+  margin: 0;
+  padding: 0;
+}
+
 .dashboard-container {
   display: flex;
   min-height: 100vh;
-  background-color: #f0f0f0;
-  margin: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Imagen de fondo */
+.background-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('/assets/icons/fondo.jpg') no-repeat center center fixed;
+  background-size: cover;
+  z-index: -1;
 }
 
 /* Menú Lateral */
 .sidebar {
   width: 250px;
-  background-color: #4a6a75; /* Color de fondo del menú lateral */
+  background-color: rgba(0, 51, 25, 0.85); /* Verde oscuro semitransparente */
   padding: 20px;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  color: #fff;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.4);
+  color: #ffffff; /* Texto blanco */
 }
 
 .sidebar h2 {
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
+  color: #c6f6d5; /* Verde claro para títulos */
 }
 
 .sidebar nav {
@@ -31,45 +49,52 @@
 /* Botones del menú lateral */
 .sidebar button {
   background-color: transparent;
-  color: #fff;
-  border: none;
+  color: #b9e4c9; /* Verde tenue */
+  border: 1px solid #6aa57d; /* Borde verde medio */
   padding: 10px 15px;
   text-align: left;
   cursor: pointer;
   font-size: 1rem;
+  border-radius: 5px;
   transition: background-color 0.3s, color 0.3s;
 }
 
 .sidebar button:hover {
-  background-color: #c49c8d; /* Color cuando el botón está en hover */
+  background-color: #38a169; /* Verde en hover */
+  color: #ffffff; /* Texto blanco en hover */
 }
 
 /* Estilo del botón activo */
 .sidebar button.active {
-  background-color: #c49c8d; /* Color para indicar qué opción está seleccionada */
+  background-color: #2f855a; /* Verde más oscuro */
   font-weight: bold;
+  color: #ffffff;
 }
 
 /* Botón de cerrar sesión */
 .logout-button {
   margin-top: 2rem;
   padding: 10px 15px;
-  background-color: #e63946;
+  background-color: #ff6b6b; /* Rojo para cerrar sesión */
   color: #fff;
   border: none;
   cursor: pointer;
   font-size: 1rem;
+  border-radius: 5px;
   transition: background-color 0.3s;
 }
 
 .logout-button:hover {
-  background-color: #b22234; /* Color cuando el botón está en hover */
+  background-color: #b22234; /* Rojo más oscuro en hover */
 }
 
 /* Contenido Principal */
 .content {
   flex-grow: 1;
   padding: 30px;
-  background-color: #fff;
+  background-color: rgba(240, 255, 244, 0.95); /* Fondo verde muy claro */
+  color: #00331a; /* Texto verde oscuro */
+  border-left: 1px solid #6aa57d; /* Borde verde medio */
   overflow-y: auto;
+  z-index: 1;
 }

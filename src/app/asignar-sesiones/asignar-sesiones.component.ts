@@ -3,6 +3,9 @@ import { SesionesService } from '../sesiones.service';
 import { AuthService } from '../auth.service';
 
 interface Sesion {
+  id?: number; // ID de la sesión
+  paciente_id: number;
+  terapeuta_id: number;
   fecha: string;
   descripcion: string;
   ejercicio_id: number;
@@ -21,24 +24,26 @@ interface Ejercicio {
   styleUrls: ['./asignar-sesiones.component.css']
 })
 export class AsignarSesionesComponent implements OnInit {
-  pacientes: any[] = []; // Lista completa de pacientes
-  pacientesFiltrados: any[] = []; // Lista filtrada de pacientes
+  pacientes: any[] = [];
+  pacientesFiltrados: any[] = [];
   ejercicios: Ejercicio[] = [];
+  sesionesAsignadas: Sesion[] = [];
   terapeutaId: number | null = null;
   pacienteSeleccionado: any = null;
   nuevaSesion: Sesion = this.obtenerNuevaSesion();
+  sesionEditando: Sesion | null = null;
   errorMessage: string = '';
-  filtro: string = ''; // Campo para el texto del buscador
+  filtro: string = '';
 
   constructor(private sesionesService: SesionesService, private authService: AuthService) {}
 
   ngOnInit(): void {
-    // Obtener el terapeutaId del usuario autenticado
     const usuario = this.authService.getUsuario();
     if (usuario && usuario.tipo_usuario === 'terapeuta') {
-      this.terapeutaId = usuario.id; // Asignamos el ID del terapeuta desde el usuario autenticado
+      this.terapeutaId = usuario.id;
       this.obtenerPacientes();
       this.obtenerEjercicios();
+      this.obtenerSesionesAsignadas();
     } else {
       this.errorMessage = 'No se pudo obtener el terapeuta autenticado.';
     }
@@ -51,19 +56,14 @@ export class AsignarSesionesComponent implements OnInit {
           (response) => {
             this.pacientes = response.pacientes.map((paciente: any) => ({
               ...paciente,
-              patologia: paciente.patologia // Asegurarse de que el campo patología esté incluido
+              patologia: paciente.patologia,
             }));
-            this.pacientesFiltrados = [...this.pacientes]; // Inicialmente todos los pacientes están filtrados
-            console.log('Lista de pacientes con patologías:', this.pacientes);
+            this.pacientesFiltrados = [...this.pacientes];
           },
           (error) => {
-            console.error('Error al obtener la lista de pacientes:', error);
             this.errorMessage = 'Error al obtener la lista de pacientes.';
           }
         );
-    } else {
-      console.error('No se pudo obtener el ID del terapeuta');
-      this.errorMessage = 'No se pudo obtener el ID del terapeuta.';
     }
   }
 
@@ -72,23 +72,39 @@ export class AsignarSesionesComponent implements OnInit {
       .subscribe(
         (response) => {
           this.ejercicios = response.ejercicios;
-          console.log('Lista de ejercicios:', this.ejercicios);
         },
         (error) => {
-          console.error('Error al obtener la lista de ejercicios:', error);
           this.errorMessage = 'Error al obtener la lista de ejercicios.';
         }
       );
   }
 
+  obtenerSesionesAsignadas(): void {
+    if (this.terapeutaId !== null) {
+      this.sesionesService.obtenerSesionesPorTerapeuta(this.terapeutaId)
+        .subscribe(
+          (response) => {
+            this.sesionesAsignadas = response.sesiones;
+            console.log('Sesiones asignadas:', this.sesionesAsignadas);
+          },
+          (error) => {
+            console.error('Error al obtener las sesiones asignadas:', error);
+            this.errorMessage = 'Error al obtener las sesiones asignadas.';
+          }
+        );
+    }
+  }
+  
+
   seleccionarPaciente(paciente: any): void {
     this.pacienteSeleccionado = paciente;
-    this.nuevaSesion = this.obtenerNuevaSesion(); // Reinicia el formulario
-    console.log('Paciente seleccionado:', this.pacienteSeleccionado);
+    this.nuevaSesion = this.obtenerNuevaSesion();
   }
 
   obtenerNuevaSesion(): Sesion {
     return {
+      paciente_id: 0,
+      terapeuta_id: this.terapeutaId!,
       fecha: '',
       descripcion: '',
       ejercicio_id: 0,
@@ -107,29 +123,59 @@ export class AsignarSesionesComponent implements OnInit {
     }
 
     const sesionAsignada = {
+      ...this.nuevaSesion,
       paciente_id: this.pacienteSeleccionado.id,
-      terapeuta_id: this.terapeutaId,
-      fecha: this.nuevaSesion.fecha,
-      descripcion: this.nuevaSesion.descripcion,
-      ejercicio_id: this.nuevaSesion.ejercicio_id,
     };
 
     this.sesionesService.asignarSesion(sesionAsignada)
       .subscribe(
         (response) => {
-          console.log('Sesión asignada exitosamente:', response);
-          this.errorMessage = ''; // Limpia el mensaje de error si el registro es exitoso
-          this.pacienteSeleccionado = null; // Deselecciona el paciente después de asignar la sesión
-          this.nuevaSesion = this.obtenerNuevaSesion(); // Limpia el formulario después de asignar la sesión
+          this.obtenerSesionesAsignadas();
+          this.nuevaSesion = this.obtenerNuevaSesion();
+          this.errorMessage = '';
         },
         (error) => {
-          console.error('Error al asignar la sesión:', error);
           this.errorMessage = 'Error al asignar la sesión.';
         }
       );
   }
 
-  // Método para filtrar la lista de pacientes
+  editarSesion(sesion: Sesion): void {
+    this.sesionEditando = { ...sesion };
+  }
+
+  guardarEdicion(): void {
+    if (!this.sesionEditando || !this.sesionEditando.id) {
+      this.errorMessage = 'No se puede editar la sesión: falta el ID.';
+      return;
+    }
+
+    this.sesionesService.editarSesion(this.sesionEditando.id, this.sesionEditando)
+      .subscribe(
+        (response) => {
+          this.obtenerSesionesAsignadas();
+          this.sesionEditando = null;
+        },
+        (error) => {
+          this.errorMessage = 'Error al actualizar la sesión.';
+        }
+      );
+  }
+
+  eliminarSesion(sesionId: number): void {
+    if (confirm('¿Estás seguro de que deseas eliminar esta sesión?')) {
+      this.sesionesService.eliminarSesion(sesionId)
+        .subscribe(
+          (response) => {
+            this.obtenerSesionesAsignadas();
+          },
+          (error) => {
+            this.errorMessage = 'Error al eliminar la sesión.';
+          }
+        );
+    }
+  }
+
   filtrarPacientes(): void {
     const filtroLower = this.filtro.toLowerCase();
     this.pacientesFiltrados = this.pacientes.filter((paciente) =>

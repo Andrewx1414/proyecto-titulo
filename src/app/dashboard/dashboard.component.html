@@ -1,14 +1,18 @@
-<div>
+<div class="dashboard-container">
+  <!-- Imagen de fondo -->
+  <div class="background-image"></div>
+
+  <!-- Título principal -->
   <h2>Estadísticas de Encuestas</h2>
 
-  <!-- Checkboxes para seleccionar patologías -->
+  <!-- Filtros -->
   <div class="filtros">
     <h3>Filtrar por Patología</h3>
     <div *ngFor="let item of estadisticas">
       <label>
-        <input 
-          type="checkbox" 
-          (change)="togglePatologia(item.patologia)" 
+        <input
+          type="checkbox"
+          (change)="togglePatologia(item.patologia)"
           [checked]="patologiasSeleccionadas.includes(item.patologia)"
         />
         {{ item.patologia || 'Sin Patología' }}
@@ -17,7 +21,7 @@
   </div>
 
   <!-- Gráfico dinámico -->
-  <div *ngIf="labels.length > 0; else noData">
+  <div class="grafico-container" *ngIf="labels.length > 0; else noData">
     <canvas baseChart
       [data]="{
         labels: labels,

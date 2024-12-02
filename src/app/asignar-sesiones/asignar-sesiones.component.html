@@ -1,71 +1,132 @@
 <div class="asignar-sesiones-container">
-  <div class="header-container">
-      <h2>Asignar Sesiones</h2>
-      <!-- Campo de búsqueda -->
-      <input 
-          type="text" 
-          placeholder="Buscar Paciente" 
-          [(ngModel)]="filtro" 
-          class="input-buscador" 
-          (input)="filtrarPacientes()">
-  </div>
+    <div class="header-container">
+        <h2>Asignar Sesiones</h2>
+        <!-- Campo de búsqueda -->
+        <input 
+            type="text" 
+            placeholder="Buscar Paciente" 
+            [(ngModel)]="filtro" 
+            class="input-buscador" 
+            (input)="filtrarPacientes()">
+    </div>
+    <div class="background-image"></div>
 
-  <!-- Mostrar mensaje si no hay pacientes -->
-  <div *ngIf="pacientesFiltrados.length === 0">
-      <p>No se encontraron pacientes.</p>
-  </div>
+    <!-- Mostrar mensaje si no hay pacientes -->
+    <div *ngIf="pacientesFiltrados.length === 0">
+        <p>No se encontraron pacientes.</p>
+    </div>
 
-  <!-- Mostrar tabla con pacientes si existen pacientes -->
-  <table *ngIf="pacientesFiltrados.length > 0" class="tabla-pacientes">
-      <thead>
-          <tr>
-              <th>RUT</th>
-              <th>Nombre</th>
-              <th>Apellidos</th>
-              <th>Email</th>
-              <th>Patología</th>
-              <th>Acciones</th>
-          </tr>
-      </thead>
-      <tbody>
-          <tr *ngFor="let paciente of pacientesFiltrados">
-              <td>{{ paciente.rut }}</td>
-              <td>{{ paciente.nombre }}</td>
-              <td>{{ paciente.apellidos }}</td>
-              <td>{{ paciente.email }}</td>
-              <td>{{ paciente.patologia }}</td>
-              <td>
-                  <button class="btn-asignar" (click)="seleccionarPaciente(paciente)">Asignar Sesión</button>
-              </td>
-          </tr>
-      </tbody>
-  </table>
+    <!-- Mostrar tabla con pacientes si existen pacientes -->
+    <table *ngIf="pacientesFiltrados.length > 0" class="tabla-pacientes">
+        <thead>
+            <tr>
+                <th>RUT</th>
+                <th>Nombre</th>
+                <th>Apellidos</th>
+                <th>Email</th>
+                <th>Patología</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let paciente of pacientesFiltrados">
+                <td>{{ paciente.rut }}</td>
+                <td>{{ paciente.nombre }}</td>
+                <td>{{ paciente.apellidos }}</td>
+                <td>{{ paciente.email }}</td>
+                <td>{{ paciente.patologia }}</td>
+                <td>
+                    <button class="btn-asignar" (click)="seleccionarPaciente(paciente)">Asignar Sesión</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 
-  <!-- Formulario para asignar una sesión -->
-  <div *ngIf="pacienteSeleccionado" class="formulario-sesion">
-      <h3>Asignar Sesión para: {{ pacienteSeleccionado.nombre }} {{ pacienteSeleccionado.apellidos }}</h3>
-      <form (ngSubmit)="asignarSesion()">
-          <div class="form-group">
-              <label for="fecha">Fecha de la sesión</label>
-              <input type="date" [(ngModel)]="nuevaSesion.fecha" name="fecha" id="fecha" required />
-          </div>
+    <!-- Formulario para asignar una sesión -->
+    <div *ngIf="pacienteSeleccionado" class="formulario-sesion">
+        <h3>Asignar Sesión para: {{ pacienteSeleccionado.nombre }} {{ pacienteSeleccionado.apellidos }}</h3>
+        <form (ngSubmit)="asignarSesion()">
+            <div class="form-group">
+                <label for="fecha">Fecha de la sesión</label>
+                <input type="date" [(ngModel)]="nuevaSesion.fecha" name="fecha" id="fecha" required />
+            </div>
 
-          <div class="form-group">
-              <label for="descripcion">Descripción de la sesión</label>
-              <input type="text" [(ngModel)]="nuevaSesion.descripcion" name="descripcion" id="descripcion" required />
-          </div>
+            <div class="form-group">
+                <label for="descripcion">Descripción de la sesión</label>
+                <input type="text" [(ngModel)]="nuevaSesion.descripcion" name="descripcion" id="descripcion" required />
+            </div>
 
-          <div class="form-group">
-              <label for="ejercicio_id">Ejercicio</label>
-              <select [(ngModel)]="nuevaSesion.ejercicio_id" name="ejercicio_id" id="ejercicio_id" required>
-                  <option *ngFor="let ejercicio of ejercicios" [value]="ejercicio.id">{{ ejercicio.nombre }}</option>
-              </select>
-          </div>
+            <div class="form-group">
+                <label for="ejercicio_id">Ejercicio</label>
+                <select [(ngModel)]="nuevaSesion.ejercicio_id" name="ejercicio_id" id="ejercicio_id" required>
+                    <option *ngFor="let ejercicio of ejercicios" [value]="ejercicio.id">{{ ejercicio.nombre }}</option>
+                </select>
+            </div>
 
-          <button type="submit" class="btn-asignar">Asignar Sesión</button>
-      </form>
-  </div>
+            <button type="submit" class="btn-asignar">Asignar Sesión</button>
+        </form>
+    </div>
 
-  <!-- Mostrar mensajes de error -->
-  <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+    <!-- Listado de sesiones asignadas -->
+    <div class="sesiones-asignadas">
+        <h3>Sesiones Asignadas</h3>
+        <table *ngIf="sesionesAsignadas.length > 0" class="tabla-sesiones">
+            <thead>
+                <tr>
+                    <th>Paciente</th>
+                    <th>Fecha</th>
+                    <th>Descripción</th>
+                    <th>Ejercicio</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let sesion of sesionesAsignadas">
+                    <td>{{ sesion.paciente_id }}</td>
+                    <!-- Usar el pipe date para formatear la fecha -->
+                    <td>{{ sesion.fecha | date: 'dd/MM/yyyy' }}</td>
+                    <td>{{ sesion.descripcion }}</td>
+                    <td>{{ sesion.ejercicio_id }}</td>
+                    <td>
+                        <button class="btn-editar" (click)="editarSesion(sesion)">Editar</button>
+                        <button class="btn-eliminar" (click)="eliminarSesion(sesion.id!)">Eliminar</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Mostrar mensaje si no hay sesiones asignadas -->
+        <div *ngIf="sesionesAsignadas.length === 0">
+            <p>No hay sesiones asignadas.</p>
+        </div>
+
+        <!-- Formulario para editar una sesión -->
+        <div *ngIf="sesionEditando" class="formulario-editar-sesion">
+            <h3>Editando Sesión</h3>
+            <form (ngSubmit)="guardarEdicion()">
+                <div class="form-group">
+                    <label for="fechaEdit">Fecha de la sesión</label>
+                    <input type="date" [(ngModel)]="sesionEditando.fecha" name="fechaEdit" id="fechaEdit" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcionEdit">Descripción de la sesión</label>
+                    <input type="text" [(ngModel)]="sesionEditando.descripcion" name="descripcionEdit" id="descripcionEdit" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="ejercicio_idEdit">Ejercicio</label>
+                    <select [(ngModel)]="sesionEditando.ejercicio_id" name="ejercicio_idEdit" id="ejercicio_idEdit" required>
+                        <option *ngFor="let ejercicio of ejercicios" [value]="ejercicio.id">{{ ejercicio.nombre }}</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-guardar">Guardar Cambios</button>
+                <button type="button" class="btn-cancelar" (click)="sesionEditando = null">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mostrar mensajes de error -->
+    <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
 </div>

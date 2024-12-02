@@ -1,4 +1,8 @@
 <div class="login-container">
+  <!-- Agregar un contenedor para la imagen de fondo -->
+  <div class="background-image"></div>
+  
+  <!-- Contenido principal del login -->
   <div class="login-form">
     <h2>Bienvenido</h2>
     <form (ngSubmit)="onSubmit()">
@@ -8,7 +12,7 @@
       <label for="password">Contraseña</label>
       <input type="password" id="password" [(ngModel)]="password" name="password" required />
 
-      <button type="submit">Login</button>
+      <button type="submit">INICIAR SESIÓN</button>
     </form>
     <div *ngIf="errorMessage" class="error-message">
       {{ errorMessage }}

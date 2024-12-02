@@ -1,44 +1,83 @@
+/* Fondo general */
+body {
+  margin: 0;
+  padding: 0;
+}
+
 .subir-videos-container {
-    max-width: 600px;
-    margin: 0 auto;
-  }
-  
-  .form-group {
-    margin-bottom: 1rem;
-  }
-  
-  label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-  }
-  
-  input, textarea {
-    width: 100%;
-    padding: 0.5rem;
-    font-size: 1rem;
-  }
-  
-  button.btn-subir {
-    padding: 0.5rem 1rem;
-    font-size: 1rem;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    cursor: pointer;
-  }
-  
-  button.btn-subir:hover {
-    background-color: #0056b3;
-  }
-  
-  .error-message {
-    color: red;
-    margin-top: 1rem;
-  }
-  
-  .success-message {
-    color: green;
-    margin-top: 1rem;
-  }
-  
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: rgba(0, 51, 25, 0.85); /* Fondo verde oscuro semitransparente */
+  color: #ffffff; /* Texto blanco */
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  position: relative;
+  z-index: 1; /* Asegura que el contenedor esté sobre la imagen de fondo */
+}
+
+/* Contenedor del fondo */
+.background-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('/assets/icons/fondo.jpeg') no-repeat center center fixed;
+  background-size: cover;
+  opacity: 0.2;
+  z-index: -1; /* Coloca la imagen detrás del contenido */
+}
+
+/* Grupo de formulario */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #ffffff; /* Verde tenue */
+}
+
+input, textarea {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #6aa57d; /* Borde verde medio */
+  border-radius: 5px;
+  background-color: #f0fff4; /* Fondo verde muy claro */
+  color: #00331a; /* Texto verde oscuro */
+}
+
+input::placeholder, textarea::placeholder {
+  color: #6aa57d; /* Placeholder verde medio */
+}
+
+/* Botón de subir */
+button.btn-subir {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  background-color: #3cc479; /* Verde */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button.btn-subir:hover {
+  background-color: #094427; /* Verde más oscuro */
+}
+
+/* Mensajes de error y éxito */
+.error-message {
+  color: #ff6b6b; /* Rojo para mensajes de error */
+  margin-top: 1rem;
+}
+
+.success-message {
+  color: #c6f6d5; /* Verde claro para mensajes de éxito */
+  margin-top: 1rem;
+}

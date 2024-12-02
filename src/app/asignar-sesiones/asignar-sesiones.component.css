@@ -1,12 +1,32 @@
-/* Contenedor principal */
+/* Fondo general */
+body {
+    margin: 0;
+    padding: 0;
+}
+
 .asignar-sesiones-container {
     max-width: 1000px; /* Incrementar el ancho máximo */
     margin: 20px auto;
     padding: 20px;
-    background-color: #4a6a75; /* Fondo verde azulado */
-    color: #fff;
+    background-color: rgba(0, 51, 25, 0.85); /* Fondo verde oscuro semitransparente */
+    color: #ffffff; /* Texto blanco */
     border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    position: relative;
+    z-index: 1; /* Asegura que el contenedor esté sobre la imagen de fondo */
+}
+
+/* Contenedor del fondo */
+.background-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('/assets/icons/fondo.jpeg') no-repeat center center fixed;
+    background-size: cover;
+    opacity: 0.5;
+    z-index: -1; /* Coloca la imagen detrás del contenido */
 }
 
 /* Título y barra de búsqueda */
@@ -19,19 +39,22 @@
 
 .header-container h2 {
     margin: 0;
+    color: #c6f6d5; /* Verde claro para el título */
 }
 
 .search-bar {
     width: 300px; /* Ancho del buscador */
     padding: 10px;
     border-radius: 5px;
-    border: none;
+    border: 1px solid #6aa57d; /* Borde verde medio */
     font-size: 14px;
     outline: none;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: #f0fff4; /* Fondo verde muy claro */
+    color: #00331a; /* Texto verde oscuro */
 }
 
-/* Tabla de pacientes */
+/* Tabla general (para pacientes y sesiones asignadas) */
 table {
     width: 100%;
     margin-bottom: 20px;
@@ -39,7 +62,7 @@ table {
 }
 
 thead {
-    background-color: #c49c8d; /* Fondo de encabezado */
+    background-color: #38a169; /* Verde para el encabezado */
 }
 
 th, td {
@@ -49,23 +72,26 @@ th, td {
 }
 
 th {
-    color: #fff;
-    font-size: 14px; /* Ajuste para texto más legible */
+    color: #ffffff; /* Texto blanco para encabezados */
+    font-size: 14px;
 }
 
 td {
-    font-size: 13px; /* Tamaño más pequeño para datos */
-    word-wrap: break-word; /* Asegura que los textos largos se ajusten */
+    font-size: 13px;
+    font-weight: bold; /* Hacer texto en negrita */
+    word-wrap: break-word;
+    color: #00331a; /* Texto verde oscuro */
 }
 
 tr:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(240, 255, 244, 0.5); /* Verde claro en hover */
 }
 
+/* Botones */
 button {
     padding: 10px 15px;
-    background-color: #c49c8d;
-    color: #fff;
+    background-color: #38a169; /* Botón verde */
+    color: #ffffff;
     border: none;
     border-radius: 5px;
     cursor: pointer;
@@ -74,7 +100,24 @@ button {
 }
 
 button:hover {
-    background-color: #a57b6b;
+    background-color: #2f855a; /* Verde más oscuro en hover */
+}
+
+/* Botones para editar y eliminar */
+.btn-editar {
+    background-color: #f6ad55; /* Botón naranja */
+}
+
+.btn-editar:hover {
+    background-color: #dd6b20; /* Naranja más oscuro en hover */
+}
+
+.btn-eliminar {
+    background-color: #e53e3e; /* Botón rojo */
+}
+
+.btn-eliminar:hover {
+    background-color: #c53030; /* Rojo más oscuro en hover */
 }
 
 /* Formulario de asignación de sesiones */
@@ -86,33 +129,45 @@ button:hover {
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
+    color: #b9e4c9; /* Verde tenue */
 }
 
 .form-group input, .form-group select {
     width: calc(100% - 20px);
     padding: 10px;
-    border: none;
+    border: 1px solid #6aa57d; /* Borde verde medio */
     border-radius: 5px;
     margin-bottom: 10px;
+    background-color: #f0fff4; /* Fondo verde muy claro */
+    color: #00331a; /* Texto verde oscuro */
 }
 
 button[type="submit"] {
     width: 100%;
-    background-color: #c49c8d;
-    color: #fff;
+    background-color: #38a169; /* Botón verde */
+    color: #ffffff;
     font-size: 16px;
 }
 
 button[type="submit"]:hover {
-    background-color: #a57b6b;
+    background-color: #2f855a; /* Verde más oscuro en hover */
 }
 
 /* Mensaje de error */
 .error-message {
-    color: #ff6961; /* Rojo claro */
+    color: #ff6b6b; /* Rojo para mensajes de error */
     margin-top: 10px;
     font-weight: bold;
     text-align: center;
+}
+
+/* Tabla específica para sesiones asignadas */
+.tabla-sesiones {
+    margin-top: 30px;
+}
+
+.tabla-sesiones th, .tabla-sesiones td {
+    text-align: center; /* Centrar texto para sesiones */
 }
 
 /* Ajustes responsivos */

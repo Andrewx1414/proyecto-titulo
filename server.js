@@ -47,10 +47,8 @@ app.post('/api/usuarios', async (req, res) => {
   }
 
   try {
-    // Hashear la contraseña antes de almacenarla
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Insertar el usuario en la base de datos
     const query = `
       INSERT INTO usuarios (
         tipo_usuario, rut, nombre, apellidos, email, password, fecha_nacimiento,
@@ -68,60 +66,36 @@ app.post('/api/usuarios', async (req, res) => {
 
     const result = await db.query(query, values);
 
-    // Configuración del correo electrónico con archivo adjunto
+    // Enviar respuesta rápida indicando que el usuario fue creado
+    res.status(202).json({
+      success: true,
+      message: 'Usuario creado. Enviando correo...',
+      userId: result.rows[0].id,
+    });
+
+    // Configuración del correo electrónico
     const mailOptions = {
-      from: 'maackinesiologia.talca@gmail.com', // Cambia por tu correo
+      from: 'maackinesiologia.talca@gmail.com',
       to: email,
       subject: 'Credenciales de Acceso',
-      text: `Hola ${nombre} ${apellidos},
-
-Se ha creado una cuenta para ti en nuestro sistema. Estas son tus credenciales de acceso:
-
-Email: ${email}
-Contraseña: ${password}
-
-Adjunto encontrarás el manual de usuario para ayudarte a comenzar.
-
-Saludos,
-El equipo de soporte.
-`,
-      html: `
-        <h1>Credenciales de Acceso</h1>
-        <p>Hola <strong>${nombre} ${apellidos}</strong>,</p>
-        <p>Se ha creado una cuenta para ti en nuestro sistema. Estas son tus credenciales de acceso:</p>
-        <ul>
-          <li><strong>Email:</strong> ${email}</li>
-          <li><strong>Contraseña:</strong> ${password}</li>
-        </ul>
-        <p>Adjunto encontrarás el manual de usuario para ayudarte a comenzar.</p>
-        <p>Saludos,<br>El equipo de soporte.</p>
-      `,
+      text: `Hola ${nombre} ${apellidos}, se ha creado una cuenta para ti.`,
+      html: `<p>Hola <strong>${nombre} ${apellidos}</strong>, se ha creado una cuenta para ti.</p>`,
       attachments: [
         {
           filename: 'manual_de_usuario.mp4',
-          path: 'C:\\Users\\andre\\OneDrive\\Escritorio\\AppKine\\videos\\manual_de_usuario.mp4', // Ruta absoluta
+          path: 'C:\\Users\\andre\\OneDrive\\Escritorio\\AppKine\\videos\\manual_de_usuario.mp4',
           contentType: 'video/mp4',
         },
       ],
     };
 
-    // Enviar el correo
+    // Enviar correo
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.error('Error al enviar el correo:', error);
-        return res.status(500).json({
-          success: false,
-          message: 'Usuario creado, pero no se pudo enviar el correo.',
-          error: error.message,
-        });
+      } else {
+        console.log('Correo enviado:', info.response);
       }
-      console.log('Correo enviado:', info.response);
-
-      res.status(200).json({
-        success: true,
-        message: 'Usuario registrado exitosamente y correo enviado.',
-        userId: result.rows[0].id,
-      });
     });
   } catch (error) {
     console.error('Error al registrar usuario:', error);
@@ -133,6 +107,17 @@ El equipo de soporte.
   }
 });
 
+
+// Obtener todos los usuarios
+app.get('/api/usuarios', async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM usuarios');
+    res.json({ success: true, usuarios: result.rows });
+  } catch (error) {
+    console.error('Error al obtener usuarios:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener usuarios' });
+  }
+});
 
 
 // Endpoint para autenticar un usuario
@@ -180,6 +165,30 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// Endpoint para validar el tipo de usuario
+app.get('/api/usuario/tipo/:id', async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ success: false, message: 'ID de usuario es requerido.' });
+  }
+
+  try {
+    const result = await db.query('SELECT tipo_usuario FROM usuarios WHERE id = $1', [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado.' });
+    }
+
+    res.json({
+      success: true,
+      tipo_usuario: result.rows[0].tipo_usuario,
+    });
+  } catch (error) {
+    console.error('Error en el servidor al obtener tipo de usuario:', error);
+    res.status(500).json({ success: false, message: 'Error en el servidor.', error: error.message });
+  }
+});
 
 
 app.get('/api/pacientes', async (req, res) => {
@@ -230,6 +239,10 @@ app.get('/api/ejercicios', async (req, res) => {
 });
 
 
+
+// Importa moment-timezone
+const moment = require('moment-timezone');
+
 // Endpoint para asignar una sesión a un paciente
 app.post('/api/asignar-sesion', async (req, res) => {
   const { paciente_id, terapeuta_id, fecha, descripcion, ejercicio_id } = req.body;
@@ -242,11 +255,15 @@ app.post('/api/asignar-sesion', async (req, res) => {
   try {
     console.log(`Asignando sesión al paciente ${paciente_id} por terapeuta ${terapeuta_id}`);
 
+    // Ajustar la fecha a la zona horaria correcta
+    const fechaConZonaHoraria = moment.tz(fecha, 'America/Santiago').format('YYYY-MM-DD HH:mm:ss');
+    const fechaParaCorreo = moment.tz(fecha, 'America/Santiago').format('DD [de] MMMM [de] YYYY');
+
     // Insertar la sesión en la base de datos
     const result = await db.query(
       `INSERT INTO citas (paciente_id, terapeuta_id, fecha, descripcion, ejercicio_id)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [paciente_id, terapeuta_id, fecha, descripcion, ejercicio_id]
+      [paciente_id, terapeuta_id, fechaConZonaHoraria, descripcion, ejercicio_id]
     );
 
     // Obtener información del paciente
@@ -271,7 +288,7 @@ app.post('/api/asignar-sesion', async (req, res) => {
 
 Se te ha asignado una nueva sesión.
 
-Fecha: ${new Date(fecha).toLocaleDateString()}
+Fecha: ${fechaParaCorreo}
 Descripción: ${descripcion}
 
 Por favor, asegúrate de asistir a tiempo.
@@ -283,7 +300,7 @@ El equipo de soporte.`,
         <p>Hola <strong>${paciente.nombre} ${paciente.apellidos}</strong>,</p>
         <p>Se te ha asignado una nueva sesión con los siguientes detalles:</p>
         <ul>
-          <li><strong>Fecha:</strong> ${new Date(fecha).toLocaleDateString()}</li>
+          <li><strong>Fecha:</strong> ${fechaParaCorreo}</li>
           <li><strong>Descripción:</strong> ${descripcion}</li>
         </ul>
         <p>Por favor, asegúrate de asistir a tiempo.</p>
@@ -669,6 +686,214 @@ app.post('/api/ejercicios', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error en el servidor.' });
   }
 });
+
+
+
+// Endpoint para modificar una sesión existente
+app.put('/api/sesiones/:id', async (req, res) => {
+  const sesionId = req.params.id;
+  const { fecha, descripcion, ejercicio_id } = req.body;
+
+  if (!sesionId || !fecha || !descripcion || !ejercicio_id) {
+    return res.status(400).json({ success: false, message: 'Todos los campos son requeridos' });
+  }
+
+  try {
+    console.log(`Modificando sesión con ID ${sesionId}`);
+
+    // Ajustar la fecha a la zona horaria correcta
+    const fechaConZonaHoraria = moment.tz(fecha, 'America/Santiago').format('YYYY-MM-DD HH:mm:ss');
+    const fechaParaCorreo = moment.tz(fecha, 'America/Santiago').format('DD [de] MMMM [de] YYYY');
+
+    // Actualizar la sesión en la base de datos
+    const result = await db.query(
+      `UPDATE citas 
+       SET fecha = $1, descripcion = $2, ejercicio_id = $3
+       WHERE id = $4 RETURNING *`,
+      [fechaConZonaHoraria, descripcion, ejercicio_id, sesionId]
+    );
+
+    if (result.rows.length === 0) {
+      console.error('Sesión no encontrada');
+      return res.status(404).json({ success: false, message: 'Sesión no encontrada' });
+    }
+
+    const sesion = result.rows[0];
+
+    // Obtener información del paciente
+    const pacienteQuery = await db.query(
+      `SELECT nombre, apellidos, email FROM usuarios WHERE id = $1`,
+      [sesion.paciente_id]
+    );
+
+    if (pacienteQuery.rows.length === 0) {
+      console.error('Paciente no encontrado');
+      return res.status(404).json({ success: false, message: 'Paciente no encontrado' });
+    }
+
+    const paciente = pacienteQuery.rows[0];
+
+    // Configuración del correo
+    const mailOptions = {
+      from: 'maackinesiologia.talca@gmail.com',
+      to: paciente.email,
+      subject: 'Modificación de Sesión',
+      text: `Hola ${paciente.nombre} ${paciente.apellidos},
+
+Tu sesión ha sido modificada.
+
+Nueva Fecha: ${fechaParaCorreo}
+Nueva Descripción: ${descripcion}
+
+Por favor, asegúrate de revisar estos cambios.
+
+Saludos,
+El equipo de soporte.`,
+      html: `
+        <h1>Modificación de Sesión</h1>
+        <p>Hola <strong>${paciente.nombre} ${paciente.apellidos}</strong>,</p>
+        <p>Tu sesión ha sido modificada con los siguientes detalles:</p>
+        <ul>
+          <li><strong>Nueva Fecha:</strong> ${fechaParaCorreo}</li>
+          <li><strong>Nueva Descripción:</strong> ${descripcion}</li>
+        </ul>
+        <p>Por favor, asegúrate de revisar estos cambios.</p>
+        <p>Saludos,<br>El equipo de soporte.</p>
+      `,
+    };
+
+    // Enviar correo
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error al enviar el correo:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Sesión modificada, pero no se pudo enviar el correo al paciente.',
+        });
+      }
+      console.log('Correo enviado:', info.response);
+    });
+
+    // Responder al cliente
+    res.json({ success: true, sesion });
+  } catch (error) {
+    console.error('Error al modificar la sesión:', error);
+    res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
+  }
+});
+
+
+// Endpoint para eliminar una sesión
+app.delete('/api/sesiones/:id', async (req, res) => {
+  const sesionId = req.params.id;
+
+  if (!sesionId) {
+    return res.status(400).json({ success: false, message: 'El ID de la sesión es requerido' });
+  }
+
+  try {
+    console.log(`Eliminando sesión con ID ${sesionId}`);
+
+    // Obtener información de la sesión antes de eliminar
+    const sesionQuery = await db.query(
+      `SELECT * FROM citas WHERE id = $1`,
+      [sesionId]
+    );
+
+    if (sesionQuery.rows.length === 0) {
+      console.error('Sesión no encontrada');
+      return res.status(404).json({ success: false, message: 'Sesión no encontrada' });
+    }
+
+    const sesion = sesionQuery.rows[0];
+
+    // Obtener información del paciente
+    const pacienteQuery = await db.query(
+      `SELECT nombre, apellidos, email FROM usuarios WHERE id = $1`,
+      [sesion.paciente_id]
+    );
+
+    if (pacienteQuery.rows.length === 0) {
+      console.error('Paciente no encontrado');
+      return res.status(404).json({ success: false, message: 'Paciente no encontrado' });
+    }
+
+    const paciente = pacienteQuery.rows[0];
+
+    // Eliminar la sesión de la base de datos
+    await db.query(`DELETE FROM citas WHERE id = $1`, [sesionId]);
+
+    // Configuración del correo
+    const mailOptions = {
+      from: 'maackinesiologia.talca@gmail.com',
+      to: paciente.email,
+      subject: 'Cancelación de Sesión',
+      text: `Hola ${paciente.nombre} ${paciente.apellidos},
+
+Tu sesión programada para el día ${new Date(sesion.fecha).toLocaleDateString()} ha sido cancelada.
+
+Si tienes dudas, no dudes en contactarnos.
+
+Saludos,
+El equipo de soporte.`,
+      html: `
+        <h1>Cancelación de Sesión</h1>
+        <p>Hola <strong>${paciente.nombre} ${paciente.apellidos}</strong>,</p>
+        <p>Tu sesión programada para el día ${new Date(sesion.fecha).toLocaleDateString()} ha sido cancelada.</p>
+        <p>Si tienes dudas, no dudes en contactarnos.</p>
+        <p>Saludos,<br>El equipo de soporte.</p>
+      `,
+    };
+
+    // Enviar correo
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error al enviar el correo:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Sesión cancelada, pero no se pudo enviar el correo al paciente.',
+        });
+      }
+      console.log('Correo enviado:', info.response);
+    });
+
+    // Responder al cliente
+    res.json({ success: true, message: 'Sesión eliminada exitosamente' });
+  } catch (error) {
+    console.error('Error al eliminar la sesión:', error);
+    res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
+  }
+});
+
+// Endpoint para obtener sesiones por terapeuta
+app.get('/api/sesiones', async (req, res) => {
+  const { terapeuta_id } = req.query;
+
+  if (!terapeuta_id) {
+    return res.status(400).json({ success: false, message: 'El ID del terapeuta es requerido' });
+  }
+
+  try {
+    console.log(`Obteniendo sesiones para terapeuta_id: ${terapeuta_id}`);
+
+    // Consulta para obtener las sesiones
+    const result = await db.query(
+      `SELECT c.id, c.paciente_id, c.terapeuta_id, c.fecha, c.descripcion, c.ejercicio_id, 
+              u.nombre AS paciente_nombre, u.apellidos AS paciente_apellidos, e.nombre AS ejercicio_nombre
+       FROM citas c
+       JOIN usuarios u ON c.paciente_id = u.id
+       JOIN ejercicios e ON c.ejercicio_id = e.id
+       WHERE c.terapeuta_id = $1`,
+      [terapeuta_id]
+    );
+
+    res.json({ success: true, sesiones: result.rows });
+  } catch (error) {
+    console.error('Error al obtener las sesiones:', error);
+    res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
+  }
+});
+
 
 // Ruta comodín para manejar solicitudes no encontradas
 app.use((req, res) => {

@@ -1,12 +1,82 @@
+/* Fondo general */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard-container {
+  padding: 20px;
+  background-color: rgba(0, 51, 25, 0.85); /* Fondo verde oscuro semitransparente */
+  color: #ffffff; /* Texto blanco */
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  position: relative;
+  z-index: 1; /* Asegura que el contenedor esté sobre la imagen de fondo */
+}
+
+/* Contenedor del fondo */
+.background-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('/assets/icons/fondo.jpeg') no-repeat center center fixed;
+  background-size: cover;
+  opacity: 0.2;
+  z-index: -1; /* Coloca la imagen detrás del contenido */
+}
+
+/* Filtros */
 .filtros {
   margin-bottom: 20px;
+  background-color: rgba(240, 255, 244, 0.95); /* Fondo verde muy claro */
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #6aa57d; /* Borde verde medio */
 }
 
 .filtros h3 {
   margin-bottom: 10px;
+  color: #40af36; /* Verde claro para los títulos */
 }
 
 .filtros label {
   display: block;
   margin-bottom: 5px;
+  font-weight: bold;
+  color: #40af36; /* Texto blanco */
+}
+
+.filtros select,
+.filtros input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #6aa57d; /* Borde verde medio */
+  background-color: #f0fff4; /* Fondo verde muy claro */
+  color: #00331a; /* Texto verde oscuro */
+}
+
+.filtros select:focus,
+.filtros input[type="text"]:focus {
+  outline: none;
+  border-color: #38a169; /* Borde verde más brillante al enfocarse */
+}
+
+/* Gráficos */
+.grafico-container {
+  margin-top: 20px;
+  background-color: rgba(240, 255, 244, 0.95); /* Fondo verde muy claro */
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid #6aa57d; /* Borde verde medio */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.grafico-title {
+  margin-bottom: 15px;
+  color: #c6f6d5; /* Verde claro para el título del gráfico */
+  font-size: 1.2rem;
+  text-align: center;
 }
