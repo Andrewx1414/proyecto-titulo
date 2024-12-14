@@ -25,7 +25,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const path = require('path');
-
+//revisar porque no se asigna el terapeuta_id con la creacion de un paciente
 app.post('/api/usuarios', async (req, res) => {
   const {
     tipo_usuario,
@@ -243,7 +243,7 @@ app.get('/api/ejercicios', async (req, res) => {
 // Importa moment-timezone
 const moment = require('moment-timezone');
 
-// Endpoint para asignar una sesión a un paciente
+// Endpoint para asignar una sesión a un paciente(revisar el endpoint ya que no se esta haciendo la asignacion correctamente)
 app.post('/api/asignar-sesion', async (req, res) => {
   const { paciente_id, terapeuta_id, fecha, descripcion, ejercicio_id } = req.body;
 
@@ -381,10 +381,13 @@ app.get('/api/ejercicio/:id', async (req, res) => {
 // Endpoint para guardar una encuesta
 app.post('/api/encuestas', async (req, res) => {
   const { paciente_id, ejercicio_id, dificultad, dolor, satisfaccion, comentario } = req.body;
+  console.log('Body recibido:', req.body);
 
   // Verificar que todos los campos requeridos estén presentes
   if (!paciente_id || !ejercicio_id || dificultad === undefined || dolor === undefined || satisfaccion === undefined) {
+    
     console.log('Campos faltantes en la solicitud de encuesta');
+    
     return res.status(400).json({ success: false, message: 'Todos los campos son requeridos (paciente_id, ejercicio_id, dificultad, dolor, satisfaccion).' });
   }
 
@@ -423,7 +426,7 @@ app.get('/api/encuestas-estadisticas', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
   }
 });
-
+//agregar tambien el filtro por ejercicio
 app.get('/api/encuestas-por-patologia', async (req, res) => {
   try {
     const result = await db.query(`
@@ -486,7 +489,9 @@ app.delete('/api/usuarios/:id', async (req, res) => {
 app.put('/api/usuarios/:id', async (req, res) => {
   const usuarioId = Number(req.params.id);
 
-  // Validar que el usuarioId sea un número entero positivo
+  console.log('🆔 ID recibido en la API:', usuarioId);
+  console.log('📦 Cuerpo de la solicitud PUT recibido en la API:', req.body);
+
   if (!Number.isInteger(usuarioId) || usuarioId <= 0) {
     return res.status(400).json({
       success: false,
@@ -496,14 +501,17 @@ app.put('/api/usuarios/:id', async (req, res) => {
 
   const {
     nombre,
+    apellidos,
     email,
     telefono,
     direccion,
     patologia,
     especialidad,
+    fecha_nacimiento,
+    rut,
+    terapeuta_id, // Incluimos terapeuta_id en la desestructuración
   } = req.body;
 
-  // Validar que se proporcionen los campos requeridos
   if (!nombre || !email) {
     return res.status(400).json({
       success: false,
@@ -516,18 +524,39 @@ app.put('/api/usuarios/:id', async (req, res) => {
       UPDATE usuarios
       SET
         nombre = $1,
-        email = $2,
-        telefono = $3,
-        direccion = $4,
-        patologia = $5,
-        especialidad = $6
-      WHERE id = $7
+        apellidos = $2,
+        email = $3,
+        telefono = $4,
+        direccion = $5,
+        patologia = $6,
+        especialidad = $7,
+        fecha_nacimiento = $8,
+        rut = $9,
+        terapeuta_id = $10 -- Agregamos terapeuta_id a la consulta
+      WHERE id = $11
       RETURNING *;
     `;
 
-    const values = [nombre, email, telefono || null, direccion || null, patologia || null, especialidad || null, usuarioId];
+    const values = [
+      nombre,
+      apellidos,
+      email,
+      telefono || null,
+      direccion || null,
+      patologia || null,
+      especialidad || null,
+      fecha_nacimiento || null,
+      rut || null,
+      terapeuta_id || null, // Asignamos terapeuta_id
+      usuarioId,
+    ];
+
+    console.log('📋 SQL Query:', query);
+    console.log('📋 Valores para la consulta:', values);
 
     const result = await db.query(query, values);
+
+    console.log('🔄 Resultado de la consulta:', result.rows);
 
     if (result.rowCount === 0) {
       return res.status(404).json({
@@ -539,10 +568,10 @@ app.put('/api/usuarios/:id', async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Usuario actualizado exitosamente.',
-      usuario: result.rows[0], // Retorna el usuario actualizado
+      usuario: result.rows[0],
     });
   } catch (error) {
-    console.error('Error al actualizar usuario:', error);
+    console.error('❌ Error al actualizar usuario:', error);
     res.status(500).json({
       success: false,
       message: 'Error en el servidor.',
@@ -550,6 +579,11 @@ app.put('/api/usuarios/:id', async (req, res) => {
     });
   }
 });
+
+
+
+
+
 
 app.get('/api/pacientes/:terapeuta_id', async (req, res) => {
   const terapeutaId = Number(req.params.terapeuta_id);
@@ -897,7 +931,7 @@ app.get('/api/sesiones', async (req, res) => {
 
 // Ruta comodín para manejar solicitudes no encontradas
 app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Endpoint no encontrado' });
+  res.status(404).json({ success: false, message: 'ERROR 404 Not Found' });
 });
 
 // Iniciar el servidor

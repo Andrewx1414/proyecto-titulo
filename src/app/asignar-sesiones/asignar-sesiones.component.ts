@@ -39,34 +39,56 @@ export class AsignarSesionesComponent implements OnInit {
 
   ngOnInit(): void {
     const usuario = this.authService.getUsuario();
-    if (usuario && usuario.tipo_usuario === 'terapeuta') {
+    console.log('👤 Usuario obtenido en ngOnInit:', usuario); 
+    
+    if (usuario && usuario.tipo_usuario === 'terapeuta' && usuario.id) {
+      console.log('✅ Se cumple la condición del IF, tipo_usuario:', usuario.tipo_usuario, 'ID:', usuario.id);
       this.terapeutaId = usuario.id;
-      this.obtenerPacientes();
+      console.log('🆔 Terapeuta ID asignado correctamente:', this.terapeutaId);
+      
+      // Asegurarse de que se llame a obtenerPacientes solo si terapeutaId tiene valor
+      if (this.terapeutaId !== null && this.terapeutaId !== undefined) {
+        console.log('📢 Llamando a obtenerPacientes con terapeutaId:', this.terapeutaId);
+        this.obtenerPacientes();
+      } else {
+        console.warn('⚠️ Terapeuta ID es nulo o indefinido. No se llamará a obtenerPacientes.');
+      }
+  
       this.obtenerEjercicios();
       this.obtenerSesionesAsignadas();
     } else {
-      this.errorMessage = 'No se pudo obtener el terapeuta autenticado.';
+      this.errorMessage = '❌ No se pudo obtener el terapeuta autenticado.';
+      console.error(this.errorMessage, { usuario });
     }
   }
+  
+  
 
   obtenerPacientes(): void {
-    if (this.terapeutaId !== null) {
-      this.sesionesService.obtenerPacientesPorTerapeuta(this.terapeutaId)
-        .subscribe(
-          (response) => {
-            this.pacientes = response.pacientes.map((paciente: any) => ({
-              ...paciente,
-              patologia: paciente.patologia,
-            }));
-            this.pacientesFiltrados = [...this.pacientes];
-          },
-          (error) => {
-            this.errorMessage = 'Error al obtener la lista de pacientes.';
-          }
-        );
-    }
+  if (this.terapeutaId !== null && this.terapeutaId !== undefined) {
+    const url = `http://localhost:3000/api/pacientes/${this.terapeutaId}`;
+    console.log('🌐 URL generada para obtenerPacientes:', url); // 👀 Verificar la URL generada
+    this.sesionesService.obtenerPacientesPorTerapeuta(this.terapeutaId)
+      .subscribe(
+        (response) => {
+          console.log('📋 Respuesta de pacientes:', response); // 👀 Verificar la respuesta
+          this.pacientes = response.pacientes.map((paciente: any) => ({
+            ...paciente,
+            patologia: paciente.patologia,
+          }));
+          this.pacientesFiltrados = [...this.pacientes];
+        },
+        (error) => {
+          console.error('❌ Error al obtener la lista de pacientes:', error); 
+          this.errorMessage = 'Error al obtener la lista de pacientes.';
+        }
+      );
+  } else {
+    console.warn('⚠️ No se puede obtener la lista de pacientes. Terapeuta ID es nulo o indefinido.');
   }
+}
 
+  
   obtenerEjercicios(): void {
     this.sesionesService.obtenerEjercicios()
       .subscribe(

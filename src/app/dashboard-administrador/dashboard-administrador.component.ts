@@ -9,7 +9,7 @@ import { AuthService } from '../auth.service';
 })
 export class DashboardAdministradorComponent implements OnInit {
   administradorNombre: string = ''; // Cambiar terapeutaNombre a administradorNombre
-  rutaActiva: string = 'asignar-sesiones';
+  rutaActiva: string = 'datos';
 
   constructor(
     private router: Router,

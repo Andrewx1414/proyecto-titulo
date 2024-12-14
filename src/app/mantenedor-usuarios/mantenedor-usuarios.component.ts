@@ -25,15 +25,15 @@ interface Usuario {
 })
 export class MantenedorUsuariosComponent implements OnInit {
   usuarios: Usuario[] = [];
+  terapeutas: Usuario[] = []; // Lista de terapeutas
   nuevoUsuario: Usuario = this.obtenerNuevoUsuario();
-  usuarioEditando: Usuario = this.obtenerNuevoUsuario();
   editando: boolean = false;
   esPaciente: boolean = false;
   esTerapeuta: boolean = false;
   errorMessage: string = '';
   terapeutaId: number | null = null;
   tipoUsuarioLogueado: string = '';
-  enProceso: boolean = false; // Nueva propiedad para manejar el estado de espera
+  enProceso: boolean = false;
 
   constructor(
     private usuarioService: UsuarioService,
@@ -41,17 +41,38 @@ export class MantenedorUsuariosComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.validarTipoUsuario();
-  }
-
-  validarTipoUsuario(): void {
     const usuarioLogueado = this.authService.getUsuario();
+    console.log('👤 Usuario logueado:', usuarioLogueado);
+
     if (!usuarioLogueado?.id) {
-      this.errorMessage = 'No se pudo obtener la información del usuario logueado.';
+      this.errorMessage = '❌ No se pudo obtener la información del usuario logueado.';
       return;
     }
 
-    this.usuarioService.validarTipoUsuario(usuarioLogueado.id).subscribe(
+    this.terapeutaId = usuarioLogueado.id;
+    console.log('🆔 Terapeuta ID asignado en ngOnInit:', this.terapeutaId);
+
+    this.validarTipoUsuario();
+    this.cargarTerapeutas(); // Cargar lista de terapeutas al inicializar
+  }
+
+  cargarTerapeutas(): void {
+    this.usuarioService.obtenerUsuarios().subscribe(
+      (response) => {
+        this.terapeutas = response.usuarios.filter(
+          (usuario: Usuario) => usuario.tipo_usuario === 'terapeuta'
+        );
+        console.log('📋 Lista de terapeutas cargada:', this.terapeutas);
+      },
+      (error) => {
+        this.errorMessage = '❌ No se pudo cargar la lista de terapeutas.';
+        console.error(error);
+      }
+    );
+  }
+
+  validarTipoUsuario(): void {
+    this.usuarioService.validarTipoUsuario(this.terapeutaId!).subscribe(
       (response) => {
         if (response.success) {
           this.tipoUsuarioLogueado = response.tipo_usuario;
@@ -75,7 +96,9 @@ export class MantenedorUsuariosComponent implements OnInit {
       this.esTerapeuta = false;
     }
 
-    this.cargarUsuarios();
+    if (this.terapeutaId !== null && this.terapeutaId !== undefined) {
+      this.cargarUsuarios();
+    }
   }
 
   cargarUsuarios(): void {
@@ -83,21 +106,76 @@ export class MantenedorUsuariosComponent implements OnInit {
       this.usuarioService.obtenerPacientesPorTerapeuta(this.terapeutaId!).subscribe(
         (response) => {
           this.usuarios = response.pacientes;
+          console.log('📋 Pacientes obtenidos para terapeuta:', this.usuarios);
         },
         () => {
-          this.errorMessage = 'No se pudieron cargar los pacientes.';
+          this.errorMessage = '❌ No se pudieron cargar los pacientes asociados al terapeuta.';
         }
       );
     } else {
       this.usuarioService.obtenerUsuarios().subscribe(
         (response) => {
           this.usuarios = response.usuarios;
+          console.log('📋 Usuarios obtenidos:', this.usuarios);
         },
         () => {
-          this.errorMessage = 'No se pudieron cargar los usuarios.';
+          this.errorMessage = '❌ No se pudieron cargar los usuarios.';
         }
       );
     }
+  }
+
+  registrarUsuario(): void {
+    this.errorMessage = '';
+    this.enProceso = true;
+
+    if (!this.nuevoUsuario.tipo_usuario || !this.nuevoUsuario.rut || !this.nuevoUsuario.nombre ||
+        !this.nuevoUsuario.apellidos || !this.nuevoUsuario.email || !this.nuevoUsuario.password) {
+      this.errorMessage = 'Por favor, completa todos los campos obligatorios.';
+      this.enProceso = false;
+      return;
+    }
+
+    this.usuarioService.registrarUsuario(this.nuevoUsuario).subscribe(
+      () => {
+        this.resetFormulario();
+        this.cargarUsuarios();
+        this.enProceso = false;
+      },
+      (error) => {
+        this.errorMessage = error?.error?.message || 'Error al registrar el usuario.';
+        this.enProceso = false;
+      }
+    );
+  }
+
+  editarUsuario(usuario: Usuario): void {
+    console.log('✏️ Editando usuario:', usuario);
+    this.nuevoUsuario = { ...usuario };
+    this.esPaciente = usuario.tipo_usuario === 'paciente';
+    this.esTerapeuta = usuario.tipo_usuario === 'terapeuta';
+    this.nuevoUsuario.terapeuta_id = usuario.terapeuta_id || null;
+    this.editando = true;
+  }
+
+  guardarEdicion(): void {
+    if (!this.nuevoUsuario.id) {
+      console.error('⚠️ No hay usuario seleccionado para editar.');
+      return;
+    }
+
+    console.log('📤 Datos enviados para guardar cambios:', this.nuevoUsuario);
+
+    this.usuarioService.editarUsuario(this.nuevoUsuario).subscribe(
+      (response) => {
+        console.log('✅ Respuesta del servidor tras la actualización:', response);
+        this.cargarUsuarios();
+        this.cancelarEdicion();
+      },
+      (error) => {
+        console.error('❌ Error en la actualización:', error);
+      }
+    );
   }
 
   eliminarUsuario(usuarioId: number | undefined): void {
@@ -118,32 +196,9 @@ export class MantenedorUsuariosComponent implements OnInit {
     }
   }
 
-  editarUsuario(usuario: Usuario): void {
-    this.usuarioEditando = { ...usuario };
-    this.esPaciente = usuario.tipo_usuario === 'paciente';
-    this.esTerapeuta = usuario.tipo_usuario === 'terapeuta';
-    this.editando = true;
-  }
-
-  guardarEdicion(): void {
-    if (!this.usuarioEditando) {
-      console.error('No hay usuario seleccionado para editar.');
-      return;
-    }
-
-    this.usuarioService.editarUsuario(this.usuarioEditando).subscribe(
-      () => {
-        this.cargarUsuarios();
-        this.cancelarEdicion();
-      },
-      () => {
-        this.errorMessage = 'No se pudo actualizar el usuario.';
-      }
-    );
-  }
-
   cancelarEdicion(): void {
-    this.usuarioEditando = this.obtenerNuevoUsuario();
+    console.log('🛑 Cancelando edición.');
+    this.resetFormulario();
     this.editando = false;
   }
 
@@ -155,6 +210,12 @@ export class MantenedorUsuariosComponent implements OnInit {
       apellidos: '',
       email: '',
       password: '',
+      fecha_nacimiento: '',
+      telefono: '',
+      direccion: '',
+      especialidad: '',
+      terapeuta_id: null,
+      patologia: ''
     };
   }
 
@@ -163,10 +224,10 @@ export class MantenedorUsuariosComponent implements OnInit {
 
     if (tipo === 'paciente') {
       this.esPaciente = isChecked;
-      if (isChecked) this.esTerapeuta = false;
+      this.esTerapeuta = !isChecked;
     } else if (tipo === 'terapeuta') {
       this.esTerapeuta = isChecked;
-      if (isChecked) this.esPaciente = false;
+      this.esPaciente = !isChecked;
     }
 
     if (this.esPaciente) {
@@ -178,52 +239,18 @@ export class MantenedorUsuariosComponent implements OnInit {
     }
   }
 
-  registrarUsuario(): void {
-    this.errorMessage = '';
-    this.enProceso = true; // Activa el estado de espera
-
-    if (!this.nuevoUsuario.tipo_usuario || !this.nuevoUsuario.rut || !this.nuevoUsuario.nombre ||
-        !this.nuevoUsuario.apellidos || !this.nuevoUsuario.email || !this.nuevoUsuario.password) {
-      this.errorMessage = 'Por favor, completa todos los campos obligatorios.';
-      this.enProceso = false; // Desactiva el estado de espera
-      return;
-    }
-
-    if (this.nuevoUsuario.tipo_usuario === 'paciente') {
-      if (!this.nuevoUsuario.fecha_nacimiento || !this.nuevoUsuario.telefono || !this.nuevoUsuario.direccion || !this.nuevoUsuario.patologia) {
-        this.errorMessage = 'Por favor, completa todos los campos obligatorios del paciente.';
-        this.enProceso = false; // Desactiva el estado de espera
-        return;
-      }
-      this.nuevoUsuario.terapeuta_id = this.terapeutaId;
-    }
-
-    if (this.nuevoUsuario.tipo_usuario === 'terapeuta') {
-      if (!this.nuevoUsuario.especialidad) {
-        this.errorMessage = 'Por favor, ingresa la especialidad del terapeuta.';
-        this.enProceso = false; // Desactiva el estado de espera
-        return;
-      }
-    }
-
-    this.usuarioService.registrarUsuario(this.nuevoUsuario).subscribe(
-      () => {
-        this.resetFormulario();
-        this.cargarUsuarios();
-        this.enProceso = false; // Desactiva el estado de espera
-      },
-      (error) => {
-        this.errorMessage = error?.error?.message || 'Error al registrar el usuario.';
-        this.enProceso = false; // Desactiva el estado de espera
-      }
-    );
-  }
-
   resetFormulario(): void {
     this.nuevoUsuario = this.obtenerNuevoUsuario();
     this.esPaciente = false;
     this.esTerapeuta = false;
     this.errorMessage = '';
-    this.enProceso = false; // Desactiva el estado de espera
+    this.enProceso = false;
+  }
+
+  asignarTerapeuta(terapeuta: Usuario): void {
+    if (this.nuevoUsuario) {
+      this.nuevoUsuario.terapeuta_id = terapeuta.id!;
+      console.log('🧾 Terapeuta asignado:', terapeuta);
+    }
   }
 }

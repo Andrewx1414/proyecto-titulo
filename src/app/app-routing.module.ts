@@ -37,7 +37,7 @@ const routes: Routes = [
     component: DashboardAdministradorComponent, 
     canActivate: [AuthGuard], 
     children :[
-      { path: '', redirectTo: 'asignar-sesiones', pathMatch: 'full' },
+      { path: '', redirectTo: 'datos', pathMatch: 'full' },
       { path: 'asignar-sesiones', component: AsignarSesionesComponent },
       { path: 'subir-videos', component: SubirVideosComponent },
       { path: 'mantenedor-usuarios', component: MantenedorUsuariosComponent },

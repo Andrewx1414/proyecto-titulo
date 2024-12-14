@@ -6,9 +6,6 @@
   <div class="sidebar">
     <h2>Bienvenido {{ administradorNombre }}!</h2>
     <nav>
-      <button (click)="navigateTo('asignar-sesiones')" [ngClass]="{ 'active': rutaActiva === 'asignar-sesiones' }">
-        Asignar Sesiones
-      </button>
       <button (click)="navigateTo('subir-videos')" [ngClass]="{ 'active': rutaActiva === 'subir-videos' }">
         Subir Videos
       </button>

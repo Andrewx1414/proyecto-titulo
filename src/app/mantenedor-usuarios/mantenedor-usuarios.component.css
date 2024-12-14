@@ -14,7 +14,7 @@ body {
   max-width: 600px;
   margin: 20px auto;
   position: relative;
-  z-index: 1; /* Asegura que el contenedor esté sobre la imagen de fondo */
+  z-index: 10; /* Asegura que el contenedor esté sobre la imagen de fondo */
 }
 
 /* Contenedor del fondo */
@@ -54,6 +54,12 @@ input[type="date"] {
   background-color: #f0fff4; /* Fondo verde muy claro */
   color: #00331a; /* Texto verde oscuro */
 }
+/* Añade estos estilos temporales para resaltar los elementos */
+input[type="checkbox"],
+select {
+  border: 2px dashed red;
+}
+
 
 input::placeholder {
   color: #6aa57d; /* Placeholder verde medio */

@@ -5,13 +5,22 @@
   <h2>Mantenedor de Usuarios</h2>
   <div class="background-image"></div>
 
-  <!-- Formulario para registrar usuarios -->
-  <form class="formulario-usuarios" *ngIf="!editando" (ngSubmit)="registrarUsuario()">
-    <!-- Tipo de Usuario -->
-    <div class="form-group tipo-usuario-checkboxes" *ngIf="tipoUsuarioLogueado === 'administrador'">
+  <!-- Formulario para registrar/editar usuarios -->
+  <form
+    class="formulario-usuarios"
+    (ngSubmit)="editando ? guardarEdicion() : registrarUsuario()"
+  >
+    <h3 *ngIf="!editando">Registrar Usuario</h3>
+    <h3 *ngIf="editando">Editar Usuario</h3>
+
+    <!-- Selección de tipo de usuario (solo visible para administrador) -->
+    <div 
+      class="form-group tipo-usuario-checkboxes" 
+      *ngIf="tipoUsuarioLogueado === 'administrador'"
+    >
       <label>Seleccione el tipo de usuario:</label>
       <div class="checkbox-container">
-        <label class="checkbox-label">
+        <label>
           <input
             type="checkbox"
             (change)="onCheckboxChange('paciente', $event)"
@@ -19,7 +28,7 @@
           />
           Paciente
         </label>
-        <label class="checkbox-label">
+        <label>
           <input
             type="checkbox"
             (change)="onCheckboxChange('terapeuta', $event)"
@@ -28,6 +37,24 @@
           Terapeuta
         </label>
       </div>
+    </div>
+
+    <!-- Asignación de terapeuta (solo para administrador al editar un paciente) -->
+    <div 
+      class="form-group" 
+      *ngIf="tipoUsuarioLogueado === 'administrador' && esPaciente"
+    >
+      <label for="terapeuta">Asignar Terapeuta</label>
+      <select
+        [(ngModel)]="nuevoUsuario.terapeuta_id"
+        name="terapeuta"
+        id="terapeuta"
+      >
+        <option [value]="null">-- Seleccione un terapeuta --</option>
+        <option *ngFor="let terapeuta of terapeutas" [value]="terapeuta.id">
+          {{ terapeuta.nombre }} {{ terapeuta.apellidos }}
+        </option>
+      </select>
     </div>
 
     <!-- Campos comunes -->
@@ -82,54 +109,65 @@
         [(ngModel)]="nuevoUsuario.password"
         name="password"
         id="password"
-        required
+        [required]="!editando"
         placeholder="Ingrese la contraseña"
       />
     </div>
 
-    <!-- Campos adicionales para pacientes -->
-    <div class="form-group" *ngIf="esPaciente">
+    <!-- Campos adicionales para pacientes (visibles para terapeuta y administrador) -->
+    <div class="form-group">
       <label for="fechaNacimiento">Fecha de Nacimiento</label>
       <input
         type="date"
         [(ngModel)]="nuevoUsuario.fecha_nacimiento"
         name="fechaNacimiento"
         id="fechaNacimiento"
+        placeholder="Ingrese la fecha de nacimiento"
       />
     </div>
-    <div class="form-group" *ngIf="esPaciente">
+    <div class="form-group">
       <label for="telefono">Teléfono</label>
-      <input type="text" [(ngModel)]="nuevoUsuario.telefono" name="telefono" id="telefono" />
-    </div>
-    <div class="form-group" *ngIf="esPaciente">
-      <label for="direccion">Dirección</label>
-      <input type="text" [(ngModel)]="nuevoUsuario.direccion" name="direccion" id="direccion" />
-    </div>
-    <div class="form-group" *ngIf="esPaciente">
-      <label for="patologia">Patología</label>
-      <input type="text" [(ngModel)]="nuevoUsuario.patologia" name="patologia" id="patologia" />
-    </div>
-
-    <!-- Campo adicional para terapeutas -->
-    <div class="form-group" *ngIf="esTerapeuta">
-      <label for="especialidad">Especialidad</label>
       <input
         type="text"
-        [(ngModel)]="nuevoUsuario.especialidad"
-        name="especialidad"
-        id="especialidad"
+        [(ngModel)]="nuevoUsuario.telefono"
+        name="telefono"
+        id="telefono"
+        placeholder="Ingrese el teléfono"
+      />
+    </div>
+    <div class="form-group">
+      <label for="direccion">Dirección</label>
+      <input
+        type="text"
+        [(ngModel)]="nuevoUsuario.direccion"
+        name="direccion"
+        id="direccion"
+        placeholder="Ingrese la dirección"
+      />
+    </div>
+    <div class="form-group">
+      <label for="patologia">Patología</label>
+      <input
+        type="text"
+        [(ngModel)]="nuevoUsuario.patologia"
+        name="patologia"
+        id="patologia"
+        placeholder="Ingrese la patología"
       />
     </div>
 
-    <button type="submit" class="btn-registrar" [disabled]="enProceso">Registrar Usuario</button>
+    <!-- Botones -->
+    <button type="submit" class="btn-guardar" [disabled]="enProceso">
+      {{ editando ? 'Guardar Cambios' : 'Registrar Usuario' }}
+    </button>
+    <button type="button" class="btn-cancelar" *ngIf="editando" (click)="cancelarEdicion()">
+      Cancelar
+    </button>
   </form>
 
-  <!-- Tabla para listar usuarios -->
-  <div class="usuarios-lista">
+  <!-- Lista de usuarios (solo para administradores) -->
+  <div class="usuarios-lista" *ngIf="tipoUsuarioLogueado === 'administrador'">
     <h3>Lista de Usuarios</h3>
-    <div *ngIf="usuarios.length === 0 && !errorMessage">
-      <p>Cargando usuarios...</p>
-    </div>
     <table *ngIf="usuarios.length > 0">
       <thead>
         <tr>
@@ -147,12 +185,45 @@
           <td>{{ usuario.apellidos }}</td>
           <td>{{ usuario.tipo_usuario }}</td>
           <td>
-            <button (click)="editarUsuario(usuario)" class="btn-editar" [disabled]="enProceso">Editar</button>
-            <button (click)="eliminarUsuario(usuario.id!)" class="btn-eliminar" [disabled]="enProceso">Eliminar</button>
+            <button (click)="editarUsuario(usuario)" class="btn-editar">
+              Editar
+            </button>
+            <button (click)="eliminarUsuario(usuario.id!)" class="btn-eliminar">
+              Eliminar
+            </button>
           </td>
         </tr>
       </tbody>
     </table>
-    <p *ngIf="errorMessage">{{ errorMessage }}</p>
+  </div>
+
+  <!-- Lista de pacientes (solo para terapeutas) -->
+  <div class="usuarios-lista" *ngIf="tipoUsuarioLogueado === 'terapeuta'">
+    <h3>Lista de Pacientes</h3>
+    <table *ngIf="usuarios.length > 0">
+      <thead>
+        <tr>
+          <th>RUT</th>
+          <th>Nombre</th>
+          <th>Apellidos</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let usuario of usuarios">
+          <td>{{ usuario.rut }}</td>
+          <td>{{ usuario.nombre }}</td>
+          <td>{{ usuario.apellidos }}</td>
+          <td>
+            <button (click)="editarUsuario(usuario)" class="btn-editar">
+              Editar
+            </button>
+            <button (click)="eliminarUsuario(usuario.id!)" class="btn-eliminar">
+              Eliminar
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
