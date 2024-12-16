@@ -42,16 +42,12 @@ export class MantenedorUsuariosComponent implements OnInit {
 
   ngOnInit(): void {
     const usuarioLogueado = this.authService.getUsuario();
-    console.log('👤 Usuario logueado:', usuarioLogueado);
-
     if (!usuarioLogueado?.id) {
       this.errorMessage = '❌ No se pudo obtener la información del usuario logueado.';
       return;
     }
-
+    
     this.terapeutaId = usuarioLogueado.id;
-    console.log('🆔 Terapeuta ID asignado en ngOnInit:', this.terapeutaId);
-
     this.validarTipoUsuario();
     this.cargarTerapeutas(); // Cargar lista de terapeutas al inicializar
   }
@@ -62,11 +58,9 @@ export class MantenedorUsuariosComponent implements OnInit {
         this.terapeutas = response.usuarios.filter(
           (usuario: Usuario) => usuario.tipo_usuario === 'terapeuta'
         );
-        console.log('📋 Lista de terapeutas cargada:', this.terapeutas);
       },
       (error) => {
         this.errorMessage = '❌ No se pudo cargar la lista de terapeutas.';
-        console.error(error);
       }
     );
   }
@@ -91,11 +85,8 @@ export class MantenedorUsuariosComponent implements OnInit {
     if (this.tipoUsuarioLogueado === 'terapeuta') {
       this.esPaciente = true;
       this.nuevoUsuario.tipo_usuario = 'paciente';
-    } else if (this.tipoUsuarioLogueado === 'admin') {
-      this.esPaciente = false;
-      this.esTerapeuta = false;
-    }
-
+      this.nuevoUsuario.terapeuta_id = this.terapeutaId; // Asignar terapeuta automáticamente
+    } 
     if (this.terapeutaId !== null && this.terapeutaId !== undefined) {
       this.cargarUsuarios();
     }
@@ -106,7 +97,6 @@ export class MantenedorUsuariosComponent implements OnInit {
       this.usuarioService.obtenerPacientesPorTerapeuta(this.terapeutaId!).subscribe(
         (response) => {
           this.usuarios = response.pacientes;
-          console.log('📋 Pacientes obtenidos para terapeuta:', this.usuarios);
         },
         () => {
           this.errorMessage = '❌ No se pudieron cargar los pacientes asociados al terapeuta.';
@@ -116,7 +106,6 @@ export class MantenedorUsuariosComponent implements OnInit {
       this.usuarioService.obtenerUsuarios().subscribe(
         (response) => {
           this.usuarios = response.usuarios;
-          console.log('📋 Usuarios obtenidos:', this.usuarios);
         },
         () => {
           this.errorMessage = '❌ No se pudieron cargar los usuarios.';
@@ -129,11 +118,9 @@ export class MantenedorUsuariosComponent implements OnInit {
     this.errorMessage = '';
     this.enProceso = true;
 
-    if (!this.nuevoUsuario.tipo_usuario || !this.nuevoUsuario.rut || !this.nuevoUsuario.nombre ||
-        !this.nuevoUsuario.apellidos || !this.nuevoUsuario.email || !this.nuevoUsuario.password) {
-      this.errorMessage = 'Por favor, completa todos los campos obligatorios.';
-      this.enProceso = false;
-      return;
+    if (this.tipoUsuarioLogueado === 'terapeuta') {
+      this.nuevoUsuario.terapeuta_id = this.terapeutaId; // Asignar terapeuta automáticamente
+      this.nuevoUsuario.tipo_usuario = 'paciente'; // Los terapeutas solo pueden crear pacientes
     }
 
     this.usuarioService.registrarUsuario(this.nuevoUsuario).subscribe(
@@ -150,10 +137,8 @@ export class MantenedorUsuariosComponent implements OnInit {
   }
 
   editarUsuario(usuario: Usuario): void {
-    console.log('✏️ Editando usuario:', usuario);
     this.nuevoUsuario = { ...usuario };
     this.esPaciente = usuario.tipo_usuario === 'paciente';
-    this.esTerapeuta = usuario.tipo_usuario === 'terapeuta';
     this.nuevoUsuario.terapeuta_id = usuario.terapeuta_id || null;
     this.editando = true;
   }
@@ -163,27 +148,21 @@ export class MantenedorUsuariosComponent implements OnInit {
       console.error('⚠️ No hay usuario seleccionado para editar.');
       return;
     }
-
-    console.log('📤 Datos enviados para guardar cambios:', this.nuevoUsuario);
-
     this.usuarioService.editarUsuario(this.nuevoUsuario).subscribe(
       (response) => {
-        console.log('✅ Respuesta del servidor tras la actualización:', response);
         this.cargarUsuarios();
         this.cancelarEdicion();
       },
       (error) => {
-        console.error('❌ Error en la actualización:', error);
+        this.errorMessage = 'Error al guardar los cambios.';
       }
     );
   }
 
   eliminarUsuario(usuarioId: number | undefined): void {
     if (!usuarioId) {
-      console.error('El ID del usuario es inválido.');
       return;
     }
-
     if (confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
       this.usuarioService.eliminarUsuario(usuarioId).subscribe(
         () => {
@@ -197,7 +176,6 @@ export class MantenedorUsuariosComponent implements OnInit {
   }
 
   cancelarEdicion(): void {
-    console.log('🛑 Cancelando edición.');
     this.resetFormulario();
     this.editando = false;
   }
@@ -210,33 +188,8 @@ export class MantenedorUsuariosComponent implements OnInit {
       apellidos: '',
       email: '',
       password: '',
-      fecha_nacimiento: '',
-      telefono: '',
-      direccion: '',
-      especialidad: '',
       terapeuta_id: null,
-      patologia: ''
     };
-  }
-
-  onCheckboxChange(tipo: string, event: Event): void {
-    const isChecked = (event.target as HTMLInputElement).checked;
-
-    if (tipo === 'paciente') {
-      this.esPaciente = isChecked;
-      this.esTerapeuta = !isChecked;
-    } else if (tipo === 'terapeuta') {
-      this.esTerapeuta = isChecked;
-      this.esPaciente = !isChecked;
-    }
-
-    if (this.esPaciente) {
-      this.nuevoUsuario.tipo_usuario = 'paciente';
-    } else if (this.esTerapeuta) {
-      this.nuevoUsuario.tipo_usuario = 'terapeuta';
-    } else {
-      this.nuevoUsuario.tipo_usuario = '';
-    }
   }
 
   resetFormulario(): void {
@@ -245,6 +198,28 @@ export class MantenedorUsuariosComponent implements OnInit {
     this.esTerapeuta = false;
     this.errorMessage = '';
     this.enProceso = false;
+    if (this.tipoUsuarioLogueado === 'terapeuta') {
+      this.nuevoUsuario.tipo_usuario = 'paciente';
+      this.nuevoUsuario.terapeuta_id = this.terapeutaId;
+    }
+  }
+
+  onCheckboxChange(tipo: string, event: Event): void {
+    const isChecked = (event.target as HTMLInputElement).checked;
+    if (tipo === 'paciente') {
+      this.esPaciente = isChecked;
+      this.esTerapeuta = !isChecked;
+    } else if (tipo === 'terapeuta') {
+      this.esTerapeuta = isChecked;
+      this.esPaciente = !isChecked;
+    }
+    if (this.esPaciente) {
+      this.nuevoUsuario.tipo_usuario = 'paciente';
+    } else if (this.esTerapeuta) {
+      this.nuevoUsuario.tipo_usuario = 'terapeuta';
+    } else {
+      this.nuevoUsuario.tipo_usuario = '';
+    }
   }
 
   asignarTerapeuta(terapeuta: Usuario): void {

@@ -73,13 +73,31 @@ app.post('/api/usuarios', async (req, res) => {
       userId: result.rows[0].id,
     });
 
-    // Configuración del correo electrónico
     const mailOptions = {
       from: 'maackinesiologia.talca@gmail.com',
       to: email,
       subject: 'Credenciales de Acceso',
-      text: `Hola ${nombre} ${apellidos}, se ha creado una cuenta para ti.`,
-      html: `<p>Hola <strong>${nombre} ${apellidos}</strong>, se ha creado una cuenta para ti.</p>`,
+      text: `
+        Hola ${nombre} ${apellidos}, 
+        Se ha creado una cuenta para ti.
+
+        Tus credenciales de acceso son:
+        - Email: ${email}
+        - Contraseña: ${password}
+
+        Atte. 
+        Administración MaacKinesiología Talca
+      `,
+      html: `
+        <h2>Hola <strong>${nombre} ${apellidos}</strong>,</h2>
+        <p>Se ha creado una cuenta para ti.</p>
+        <p>Tus credenciales de acceso son:</p>
+        <ul>
+          <li><strong>Email:</strong> ${email}</li>
+          <li><strong>Contraseña:</strong> ${password}</li>
+        </ul>
+        <p>Atte.<br><strong>Administración MaacKinesiología Talca</strong></p>
+      `,
       attachments: [
         {
           filename: 'manual_de_usuario.mp4',
@@ -88,6 +106,7 @@ app.post('/api/usuarios', async (req, res) => {
         },
       ],
     };
+
 
     // Enviar correo
     transporter.sendMail(mailOptions, (error, info) => {
@@ -296,15 +315,15 @@ Por favor, asegúrate de asistir a tiempo.
 Saludos,
 El equipo de soporte.`,
       html: `
-        <h1>Asignación de Sesión</h1>
+        <h2>Asignación de Sesión</h2>
         <p>Hola <strong>${paciente.nombre} ${paciente.apellidos}</strong>,</p>
         <p>Se te ha asignado una nueva sesión con los siguientes detalles:</p>
         <ul>
           <li><strong>Fecha:</strong> ${fechaParaCorreo}</li>
           <li><strong>Descripción:</strong> ${descripcion}</li>
         </ul>
-        <p>Por favor, asegúrate de asistir a tiempo.</p>
-        <p>Saludos,<br>El equipo de soporte.</p>
+        <p>Por favor, asegúrate de conectarte en las horas indicadas por tu terapeuta.</p>
+        <p>Atte.<br>Administración MaacKinesiología Talca.</p>
       `,
     };
 
