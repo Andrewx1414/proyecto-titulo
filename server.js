@@ -528,7 +528,7 @@ app.put('/api/usuarios/:id', async (req, res) => {
     especialidad,
     fecha_nacimiento,
     rut,
-    terapeuta_id, // Incluimos terapeuta_id en la desestructuración
+    terapeuta_id, 
   } = req.body;
 
   if (!nombre || !email) {
@@ -539,36 +539,34 @@ app.put('/api/usuarios/:id', async (req, res) => {
   }
 
   try {
+    // Armar la consulta de forma dinámica
+    const fields = [
+      { key: 'nombre', value: nombre },
+      { key: 'apellidos', value: apellidos },
+      { key: 'email', value: email },
+      { key: 'telefono', value: telefono },
+      { key: 'direccion', value: direccion },
+      { key: 'patologia', value: patologia },
+      { key: 'especialidad', value: especialidad },
+      { key: 'fecha_nacimiento', value: fecha_nacimiento },
+      { key: 'rut', value: rut },
+    ];
+
+    if (terapeuta_id !== undefined) {
+      fields.push({ key: 'terapeuta_id', value: terapeuta_id });
+    }
+
+    const setClause = fields.map((field, index) => `${field.key} = $${index + 1}`).join(', ');
+
+    const values = fields.map(field => field.value);
+    values.push(usuarioId); // Agregar el ID del usuario al final de los valores
+
     const query = `
       UPDATE usuarios
-      SET
-        nombre = $1,
-        apellidos = $2,
-        email = $3,
-        telefono = $4,
-        direccion = $5,
-        patologia = $6,
-        especialidad = $7,
-        fecha_nacimiento = $8,
-        rut = $9,
-        terapeuta_id = $10 -- Agregamos terapeuta_id a la consulta
-      WHERE id = $11
+      SET ${setClause}
+      WHERE id = $${values.length}
       RETURNING *;
     `;
-
-    const values = [
-      nombre,
-      apellidos,
-      email,
-      telefono || null,
-      direccion || null,
-      patologia || null,
-      especialidad || null,
-      fecha_nacimiento || null,
-      rut || null,
-      terapeuta_id || null, // Asignamos terapeuta_id
-      usuarioId,
-    ];
 
     console.log('📋 SQL Query:', query);
     console.log('📋 Valores para la consulta:', values);
@@ -598,6 +596,7 @@ app.put('/api/usuarios/:id', async (req, res) => {
     });
   }
 });
+
 
 
 

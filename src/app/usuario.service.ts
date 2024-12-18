@@ -26,18 +26,20 @@ export class UsuarioService {
     return this.http.delete<any>(`${this.apiBaseUrl}/usuarios/${usuarioId}`);
   }
 
+  // Editar un usuario (mantenemos el terapeuta_id)
   editarUsuario(usuario: any): Observable<any> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-  
-    // Agregar logs detallados para depuración
+
+    // No sobrescribir terapeuta_id con null
+    if (!usuario.terapeuta_id) {
+      delete usuario.terapeuta_id;
+    }
+
     console.log('📤 URL de la actualización:', `${this.apiBaseUrl}/usuarios/${usuario.id}`);
     console.log('📤 Cuerpo que se envía al servidor:', JSON.stringify(usuario, null, 2));
-  
+
     return this.http.put<any>(`${this.apiBaseUrl}/usuarios/${usuario.id}`, usuario, { headers });
   }
-  
-  
-
 
   // Obtener pacientes asignados a un terapeuta específico
   obtenerPacientesPorTerapeuta(terapeutaId: number): Observable<any> {
