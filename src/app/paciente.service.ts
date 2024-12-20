@@ -8,8 +8,9 @@ interface Cita {
   paciente_id: number;
   fecha: string;
   descripcion: string;
-  ejercicio_id: number | null;
+  ejercicios: { id: number; nombre: string; video_url: string }[]; // Cambiar ejercicio_id a ejercicios[]
 }
+
 
 interface RespuestaCitas {
   success: boolean;

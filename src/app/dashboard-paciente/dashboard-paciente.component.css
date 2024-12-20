@@ -193,3 +193,15 @@
 .close-button:hover {
     color: #c53030; /* Rojo más oscuro al pasar el cursor */
 }
+
+/* Asegura el uso del estándar moderno en Edge */
+* {
+  forced-color-adjust: auto; /* Reemplaza -ms-high-contrast-adjust */
+}
+
+@media (forced-colors: active) {
+  body {
+      background-color: Window; /* Usar colores del sistema en alto contraste */
+      color: WindowText;
+  }
+}

@@ -3,19 +3,14 @@ import { SesionesService } from '../sesiones.service';
 import { AuthService } from '../auth.service';
 
 interface Sesion {
-  id?: number; // ID de la sesión
+  id?: number; 
   paciente_id: number;
   terapeuta_id: number;
   fecha: string;
   descripcion: string;
-  ejercicio_id: number;
-}
-
-interface Ejercicio {
-  id: number;
-  nombre: string;
-  descripcion: string;
-  video_url: string;
+  paciente_nombre: string;
+  paciente_apellidos: string;
+  ejercicios: number[]; // Usamos IDs de los ejercicios
 }
 
 @Component({
@@ -26,96 +21,80 @@ interface Ejercicio {
 export class AsignarSesionesComponent implements OnInit {
   pacientes: any[] = [];
   pacientesFiltrados: any[] = [];
-  ejercicios: Ejercicio[] = [];
+  ejercicios: any[] = [];
   sesionesAsignadas: Sesion[] = [];
-  terapeutaId: number | null = null;
+  terapeutaId!: number; 
   pacienteSeleccionado: any = null;
   nuevaSesion: Sesion = this.obtenerNuevaSesion();
   sesionEditando: Sesion | null = null;
   errorMessage: string = '';
   filtro: string = '';
+  ejercicioSeleccionado: number | null = null; 
+  ejercicioSeleccionadoEdicion: number | null = null; 
 
   constructor(private sesionesService: SesionesService, private authService: AuthService) {}
 
   ngOnInit(): void {
     const usuario = this.authService.getUsuario();
-    console.log('👤 Usuario obtenido en ngOnInit:', usuario); 
-    
+
     if (usuario && usuario.tipo_usuario === 'terapeuta' && usuario.id) {
-      console.log('✅ Se cumple la condición del IF, tipo_usuario:', usuario.tipo_usuario, 'ID:', usuario.id);
       this.terapeutaId = usuario.id;
-      console.log('🆔 Terapeuta ID asignado correctamente:', this.terapeutaId);
-      
-      // Asegurarse de que se llame a obtenerPacientes solo si terapeutaId tiene valor
-      if (this.terapeutaId !== null && this.terapeutaId !== undefined) {
-        console.log('📢 Llamando a obtenerPacientes con terapeutaId:', this.terapeutaId);
-        this.obtenerPacientes();
-      } else {
-        console.warn('⚠️ Terapeuta ID es nulo o indefinido. No se llamará a obtenerPacientes.');
-      }
-  
       this.obtenerEjercicios();
+      this.obtenerPacientes();
       this.obtenerSesionesAsignadas();
     } else {
-      this.errorMessage = '❌ No se pudo obtener el terapeuta autenticado.';
-      console.error(this.errorMessage, { usuario });
+      this.errorMessage = 'No se pudo obtener el terapeuta autenticado.';
     }
   }
-  
-  
 
   obtenerPacientes(): void {
-  if (this.terapeutaId !== null && this.terapeutaId !== undefined) {
-    const url = `http://localhost:3000/api/pacientes/${this.terapeutaId}`;
-    console.log('🌐 URL generada para obtenerPacientes:', url); // 👀 Verificar la URL generada
-    this.sesionesService.obtenerPacientesPorTerapeuta(this.terapeutaId)
-      .subscribe(
-        (response) => {
-          console.log('📋 Respuesta de pacientes:', response); // 👀 Verificar la respuesta
-          this.pacientes = response.pacientes.map((paciente: any) => ({
-            ...paciente,
-            patologia: paciente.patologia,
-          }));
-          this.pacientesFiltrados = [...this.pacientes];
-        },
-        (error) => {
-          console.error('❌ Error al obtener la lista de pacientes:', error); 
-          this.errorMessage = 'Error al obtener la lista de pacientes.';
-        }
-      );
-  } else {
-    console.warn('⚠️ No se puede obtener la lista de pacientes. Terapeuta ID es nulo o indefinido.');
+    this.sesionesService.obtenerPacientesPorTerapeuta(this.terapeutaId).subscribe(
+      (response) => {
+        this.pacientes = response.pacientes.map((paciente: any) => ({ ...paciente, patologia: paciente.patologia }));
+        this.pacientesFiltrados = [...this.pacientes];
+      },
+      () => {
+        this.errorMessage = 'Error al obtener la lista de pacientes.';
+      }
+    );
   }
-}
 
-  
   obtenerEjercicios(): void {
-    this.sesionesService.obtenerEjercicios()
-      .subscribe(
-        (response) => {
-          this.ejercicios = response.ejercicios;
-        },
-        (error) => {
-          this.errorMessage = 'Error al obtener la lista de ejercicios.';
-        }
-      );
+    this.sesionesService.obtenerEjercicios().subscribe(
+      (response) => {
+        this.ejercicios = response.ejercicios;
+      },
+      () => {
+        this.errorMessage = 'Error al obtener la lista de ejercicios.';
+      }
+    );
   }
 
   obtenerSesionesAsignadas(): void {
-    if (this.terapeutaId !== null) {
-      this.sesionesService.obtenerSesionesPorTerapeuta(this.terapeutaId)
-        .subscribe(
-          (response) => {
-            this.sesionesAsignadas = response.sesiones;
-            console.log('Sesiones asignadas:', this.sesionesAsignadas);
-          },
-          (error) => {
-            console.error('Error al obtener las sesiones asignadas:', error);
-            this.errorMessage = 'Error al obtener las sesiones asignadas.';
-          }
-        );
-    }
+    this.sesionesService.obtenerSesionesPorTerapeuta(this.terapeutaId).subscribe(
+      (response) => {
+        this.sesionesAsignadas = response.sesiones.map((sesion: any) => ({
+          ...sesion,
+          ejercicios: sesion.ejercicios.map((ejercicio: any) => {
+            // Si ya está en formato de nombre, lo usamos directamente
+            if (typeof ejercicio === 'string') {
+              return ejercicio; // Retorna directamente el nombre del ejercicio
+            }
+            // Si es un ID, buscamos el nombre
+            const ejercicioEncontrado = this.ejercicios.find(e => e.id === ejercicio);
+            return ejercicioEncontrado ? ejercicioEncontrado.nombre : `Ejercicio no encontrado (ID: ${ejercicio})`;
+          })
+        }));
+      },
+      (error) => {
+        console.error('❌ Error al obtener las sesiones asignadas:', error);
+        this.errorMessage = 'Error al obtener las sesiones asignadas.';
+      }
+    );
   }
+  
+
+
   
 
   seleccionarPaciente(paciente: any): void {
@@ -126,10 +105,12 @@ export class AsignarSesionesComponent implements OnInit {
   obtenerNuevaSesion(): Sesion {
     return {
       paciente_id: 0,
-      terapeuta_id: this.terapeutaId!,
+      terapeuta_id: this.terapeutaId, 
       fecha: '',
       descripcion: '',
-      ejercicio_id: 0,
+      paciente_nombre: '',
+      paciente_apellidos: '',
+      ejercicios: [],
     };
   }
 
@@ -139,27 +120,38 @@ export class AsignarSesionesComponent implements OnInit {
       return;
     }
 
-    if (!this.nuevaSesion.fecha || !this.nuevaSesion.descripcion || !this.nuevaSesion.ejercicio_id) {
-      this.errorMessage = 'Por favor, complete todos los campos de la sesión.';
+    if (!this.nuevaSesion.fecha || !this.nuevaSesion.descripcion || this.nuevaSesion.ejercicios.length < 2) {
+      this.errorMessage = 'Por favor, complete todos los campos de la sesión y seleccione al menos 2 ejercicios.';
       return;
     }
 
+    const ejerciciosConvertidos = this.nuevaSesion.ejercicios.map(ej => Number(ej));
+
     const sesionAsignada = {
-      ...this.nuevaSesion,
       paciente_id: this.pacienteSeleccionado.id,
+      terapeuta_id: this.terapeutaId, 
+      fecha: this.nuevaSesion.fecha,
+      descripcion: this.nuevaSesion.descripcion,
+      ejercicios: ejerciciosConvertidos 
     };
 
-    this.sesionesService.asignarSesion(sesionAsignada)
-      .subscribe(
-        (response) => {
-          this.obtenerSesionesAsignadas();
-          this.nuevaSesion = this.obtenerNuevaSesion();
-          this.errorMessage = '';
-        },
-        (error) => {
-          this.errorMessage = 'Error al asignar la sesión.';
-        }
-      );
+    this.sesionesService.asignarSesion(sesionAsignada).subscribe(
+      (response) => {
+        this.obtenerSesionesAsignadas();
+        this.nuevaSesion = this.obtenerNuevaSesion();
+      },
+      (error) => {
+        console.error('❌ Error al asignar la sesión:', error);
+        this.errorMessage = 'Error al asignar la sesión.';
+      }
+    );
+  }
+
+  agregarEjercicio(): void {
+    if (this.ejercicioSeleccionado && !this.nuevaSesion.ejercicios.includes(Number(this.ejercicioSeleccionado))) {
+      this.nuevaSesion.ejercicios.push(Number(this.ejercicioSeleccionado));
+      this.ejercicioSeleccionado = null; 
+    }
   }
 
   editarSesion(sesion: Sesion): void {
@@ -172,40 +164,68 @@ export class AsignarSesionesComponent implements OnInit {
       return;
     }
 
-    this.sesionesService.editarSesion(this.sesionEditando.id, this.sesionEditando)
-      .subscribe(
-        (response) => {
-          this.obtenerSesionesAsignadas();
-          this.sesionEditando = null;
-        },
-        (error) => {
-          this.errorMessage = 'Error al actualizar la sesión.';
-        }
-      );
+    const ejerciciosConvertidos = this.sesionEditando.ejercicios.map(ej => Number(ej));
+
+    const sesionParaEnviar = {
+      ...this.sesionEditando,
+      ejercicios: ejerciciosConvertidos
+    };
+
+    this.sesionesService.editarSesion(this.sesionEditando.id, sesionParaEnviar).subscribe(
+      () => {
+        this.obtenerSesionesAsignadas();
+        this.sesionEditando = null;
+      },
+      (error) => {
+        console.error('Error al guardar la edición:', error);
+        this.errorMessage = 'Error al actualizar la sesión.';
+      }
+    );
   }
 
   eliminarSesion(sesionId: number): void {
     if (confirm('¿Estás seguro de que deseas eliminar esta sesión?')) {
-      this.sesionesService.eliminarSesion(sesionId)
-        .subscribe(
-          (response) => {
-            this.obtenerSesionesAsignadas();
-          },
-          (error) => {
-            this.errorMessage = 'Error al eliminar la sesión.';
-          }
-        );
+      this.sesionesService.eliminarSesion(sesionId).subscribe(
+        () => {
+          this.obtenerSesionesAsignadas();
+        },
+        () => {
+          this.errorMessage = 'Error al eliminar la sesión.';
+        }
+      );
     }
+  }
+
+  agregarEjercicioEdicion(): void {
+    if (this.ejercicioSeleccionadoEdicion && !this.sesionEditando!.ejercicios.includes(Number(this.ejercicioSeleccionadoEdicion))) {
+      this.sesionEditando!.ejercicios.push(Number(this.ejercicioSeleccionadoEdicion));
+      this.ejercicioSeleccionadoEdicion = null; 
+    }
+  }
+  
+
+  eliminarEjercicio(ejercicioId: number): void {
+    this.nuevaSesion.ejercicios = this.nuevaSesion.ejercicios.filter(id => id !== ejercicioId);
+  }
+
+  eliminarEjercicioEdicion(ejercicioId: number): void {
+    this.sesionEditando!.ejercicios = this.sesionEditando!.ejercicios.filter(id => id !== ejercicioId);
+  }
+
+  obtenerNombrePaciente(pacienteId: number): string {
+    const paciente = this.pacientes.find(p => p.id === pacienteId);
+    return paciente ? `${paciente.nombre} ${paciente.apellidos}` : 'Paciente no encontrado';
+  }
+
+  obtenerNombreEjercicio(ejercicioId: number): string {
+    const ejercicio = this.ejercicios.find(ej => ej.id === ejercicioId);
+    return ejercicio ? ejercicio.nombre : 'Ejercicio no encontrado';
   }
 
   filtrarPacientes(): void {
     const filtroLower = this.filtro.toLowerCase();
     this.pacientesFiltrados = this.pacientes.filter((paciente) =>
-      paciente.rut.toLowerCase().includes(filtroLower) ||
-      paciente.nombre.toLowerCase().includes(filtroLower) ||
-      paciente.apellidos.toLowerCase().includes(filtroLower) ||
-      paciente.email.toLowerCase().includes(filtroLower) ||
-      (paciente.patologia && paciente.patologia.toLowerCase().includes(filtroLower))
+      paciente.nombre.toLowerCase().includes(filtroLower)
     );
   }
 }

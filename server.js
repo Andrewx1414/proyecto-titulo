@@ -260,29 +260,59 @@ app.get('/api/ejercicios', async (req, res) => {
 
 
 // Importa moment-timezone
-const moment = require('moment-timezone');
+
 
 // Endpoint para asignar una sesión a un paciente(revisar el endpoint ya que no se esta haciendo la asignacion correctamente)
-app.post('/api/asignar-sesion', async (req, res) => {
-  const { paciente_id, terapeuta_id, fecha, descripcion, ejercicio_id } = req.body;
+const moment = require('moment-timezone');
 
-  if (!paciente_id || !terapeuta_id || !fecha || !descripcion || !ejercicio_id) {
-    console.log('Campos faltantes en la solicitud de asignación de sesión');
-    return res.status(400).json({ success: false, message: 'Todos los campos son requeridos' });
+
+app.post('/api/asignar-sesion', async (req, res) => {
+  const { paciente_id, terapeuta_id, fecha, descripcion, ejercicios } = req.body; 
+
+  // Validación de campos requeridos
+  if (typeof paciente_id !== 'number' || typeof terapeuta_id !== 'number' || !fecha || !descripcion || !Array.isArray(ejercicios) || ejercicios.length < 2) {
+    console.log('⚠️ Campos faltantes o insuficientes en la solicitud de asignación de sesión');
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Todos los campos son requeridos y se deben asignar al menos 2 ejercicios.' 
+    });
+  }
+
+  // Validar que los ejercicios sean números enteros
+  const ejerciciosValidos = ejercicios.every(ejercicioId => Number.isInteger(ejercicioId));
+  if (!ejerciciosValidos) {
+    console.log('⚠️ Los ejercicios no son números enteros');
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Todos los ejercicios deben ser números enteros.' 
+    });
   }
 
   try {
-    console.log(`Asignando sesión al paciente ${paciente_id} por terapeuta ${terapeuta_id}`);
+    console.log(`✅ Asignando sesión al paciente ${paciente_id} por terapeuta ${terapeuta_id}`);
 
     // Ajustar la fecha a la zona horaria correcta
     const fechaConZonaHoraria = moment.tz(fecha, 'America/Santiago').format('YYYY-MM-DD HH:mm:ss');
     const fechaParaCorreo = moment.tz(fecha, 'America/Santiago').format('DD [de] MMMM [de] YYYY');
 
-    // Insertar la sesión en la base de datos
+    // Insertar la sesión en la tabla 'citas'
     const result = await db.query(
-      `INSERT INTO citas (paciente_id, terapeuta_id, fecha, descripcion, ejercicio_id)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [paciente_id, terapeuta_id, fechaConZonaHoraria, descripcion, ejercicio_id]
+      `INSERT INTO citas (paciente_id, terapeuta_id, fecha, descripcion) 
+       VALUES ($1, $2, $3, $4) 
+       RETURNING id`,
+      [paciente_id, terapeuta_id, fechaConZonaHoraria, descripcion]
+    );
+
+    const citaId = result.rows[0].id;
+
+    // Insertar los ejercicios de la sesión en la tabla 'citas_ejercicios'
+    const values = ejercicios.map((_, index) => `($1, $${index + 2})`).join(', ');
+    const queryParams = [citaId, ...ejercicios];
+
+    await db.query(
+      `INSERT INTO citas_ejercicios (cita_id, ejercicio_id) 
+       VALUES ${values}`,
+      queryParams
     );
 
     // Obtener información del paciente
@@ -292,28 +322,41 @@ app.post('/api/asignar-sesion', async (req, res) => {
     );
 
     if (pacienteQuery.rows.length === 0) {
-      console.error('Paciente no encontrado');
-      return res.status(404).json({ success: false, message: 'Paciente no encontrado' });
+      console.error('⚠️ Paciente no encontrado');
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Paciente no encontrado' 
+      });
     }
 
     const paciente = pacienteQuery.rows[0];
 
+    // Obtener la información de los ejercicios
+    const ejerciciosQuery = await db.query(
+      `SELECT nombre FROM ejercicios WHERE id = ANY($1::int[])`, 
+      [ejercicios]
+    );
+
+    const listaDeEjercicios = ejerciciosQuery.rows.map(ej => ej.nombre).join(', ');
+
     // Configuración del correo
     const mailOptions = {
-      from: 'maackinesiologia.talca@gmail.com', // Cambia por tu correo
+      from: 'maackinesiologia.talca@gmail.com', 
       to: paciente.email,
       subject: 'Asignación de Sesión',
       text: `Hola ${paciente.nombre} ${paciente.apellidos},
 
-Se te ha asignado una nueva sesión.
+Se te ha asignado una nueva sesión con los siguientes detalles:
 
 Fecha: ${fechaParaCorreo}
 Descripción: ${descripcion}
+Videos Asignados: ${listaDeEjercicios}
 
 Por favor, asegúrate de asistir a tiempo.
 
 Saludos,
-El equipo de soporte.`,
+El equipo de soporte.
+      `,
       html: `
         <h2>Asignación de Sesión</h2>
         <p>Hola <strong>${paciente.nombre} ${paciente.apellidos}</strong>,</p>
@@ -321,29 +364,39 @@ El equipo de soporte.`,
         <ul>
           <li><strong>Fecha:</strong> ${fechaParaCorreo}</li>
           <li><strong>Descripción:</strong> ${descripcion}</li>
+          <li><strong>Videos Asignados:</strong> ${listaDeEjercicios}</li>
         </ul>
         <p>Por favor, asegúrate de conectarte en las horas indicadas por tu terapeuta.</p>
         <p>Atte.<br>Administración MaacKinesiología Talca.</p>
-      `,
+      `
     };
 
     // Enviar correo
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.error('Error al enviar el correo:', error);
+        console.error('❌ Error al enviar el correo:', error);
         return res.status(500).json({
           success: false,
           message: 'Sesión asignada, pero no se pudo enviar el correo al paciente.',
         });
       }
-      console.log('Correo enviado:', info.response);
+      console.log('📧 Correo enviado:', info.response);
     });
 
     // Responder al cliente
-    res.json({ success: true, sesion: result.rows[0] });
+    res.json({ 
+      success: true, 
+      message: 'Sesión asignada con éxito.', 
+      sesion: { citaId, fecha: fechaParaCorreo, descripcion, ejercicios: listaDeEjercicios } 
+    });
+
   } catch (error) {
-    console.error('Error al asignar la sesión:', error);
-    res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
+    console.error('❌ Error al asignar la sesión:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error en el servidor', 
+      error: error.message 
+    });
   }
 });
 
@@ -358,7 +411,20 @@ app.get('/api/citas', async (req, res) => {
 
   try {
     const result = await db.query(
-      `SELECT * FROM citas WHERE paciente_id = $1 AND EXTRACT(YEAR FROM fecha) = $2 AND EXTRACT(MONTH FROM fecha) = $3`,
+      `SELECT 
+        c.id, 
+        c.paciente_id, 
+        c.fecha, 
+        c.descripcion, 
+        json_agg(json_build_object('id', e.id, 'nombre', e.nombre, 'video_url', e.video_url)) AS ejercicios
+      FROM citas c
+      LEFT JOIN citas_ejercicios ce ON c.id = ce.cita_id
+      LEFT JOIN ejercicios e ON ce.ejercicio_id = e.id
+      WHERE c.paciente_id = $1 
+        AND EXTRACT(YEAR FROM c.fecha) = $2 
+        AND EXTRACT(MONTH FROM c.fecha) = $3
+      GROUP BY c.id
+      ORDER BY c.fecha ASC`,
       [paciente_id, year, month]
     );
 
@@ -368,6 +434,7 @@ app.get('/api/citas', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
   }
 });
+
 
 // Endpoint para obtener información de un ejercicio específico
 app.get('/api/ejercicio/:id', async (req, res) => {
@@ -744,10 +811,21 @@ app.post('/api/ejercicios', async (req, res) => {
 // Endpoint para modificar una sesión existente
 app.put('/api/sesiones/:id', async (req, res) => {
   const sesionId = req.params.id;
-  const { fecha, descripcion, ejercicio_id } = req.body;
+  const { fecha, descripcion, ejercicios } = req.body;
 
-  if (!sesionId || !fecha || !descripcion || !ejercicio_id) {
-    return res.status(400).json({ success: false, message: 'Todos los campos son requeridos' });
+  // Validación de campos requeridos
+  if (!sesionId || !fecha || !descripcion || !Array.isArray(ejercicios) || ejercicios.length === 0) {
+    return res.status(400).json({ success: false, message: 'Todos los campos son requeridos, incluyendo al menos un ejercicio.' });
+  }
+
+  // Validar que los ejercicios sean números
+  const ejerciciosInvalidos = ejercicios.filter(ej => isNaN(ej));
+  if (ejerciciosInvalidos.length > 0) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Algunos de los ejercicios proporcionados no son válidos. Se esperaban números enteros.',
+      ejerciciosInvalidos 
+    });
   }
 
   try {
@@ -757,29 +835,51 @@ app.put('/api/sesiones/:id', async (req, res) => {
     const fechaConZonaHoraria = moment.tz(fecha, 'America/Santiago').format('YYYY-MM-DD HH:mm:ss');
     const fechaParaCorreo = moment.tz(fecha, 'America/Santiago').format('DD [de] MMMM [de] YYYY');
 
-    // Actualizar la sesión en la base de datos
+    // Actualizar la sesión en la tabla 'citas'
     const result = await db.query(
       `UPDATE citas 
-       SET fecha = $1, descripcion = $2, ejercicio_id = $3
-       WHERE id = $4 RETURNING *`,
-      [fechaConZonaHoraria, descripcion, ejercicio_id, sesionId]
+       SET fecha = $1, descripcion = $2
+       WHERE id = $3 
+       RETURNING *`,
+      [fechaConZonaHoraria, descripcion, sesionId]
     );
 
     if (result.rows.length === 0) {
-      console.error('Sesión no encontrada');
+      console.error('❌ Sesión no encontrada');
       return res.status(404).json({ success: false, message: 'Sesión no encontrada' });
     }
 
     const sesion = result.rows[0];
 
+    // 🧹 Eliminar los ejercicios anteriores de la tabla 'citas_ejercicios'
+    await db.query(
+      `DELETE FROM citas_ejercicios 
+       WHERE cita_id = $1`,
+      [sesionId]
+    );
+
+    // 🔄 Insertar los nuevos ejercicios en la tabla 'citas_ejercicios'
+    const insertValues = ejercicios.map((ejercicioId, index) => `($1, $${index + 2})`).join(', ');
+    const queryParams = [sesionId, ...ejercicios];
+
+    await db.query(
+      `INSERT INTO citas_ejercicios (cita_id, ejercicio_id) 
+       VALUES ${insertValues}`,
+      queryParams
+    );
+
+    console.log('✅ Ejercicios actualizados correctamente para la sesión', sesionId);
+
     // Obtener información del paciente
     const pacienteQuery = await db.query(
-      `SELECT nombre, apellidos, email FROM usuarios WHERE id = $1`,
+      `SELECT nombre, apellidos, email 
+       FROM usuarios 
+       WHERE id = $1`,
       [sesion.paciente_id]
     );
 
     if (pacienteQuery.rows.length === 0) {
-      console.error('Paciente no encontrado');
+      console.error('❌ Paciente no encontrado');
       return res.status(404).json({ success: false, message: 'Paciente no encontrado' });
     }
 
@@ -817,22 +917,24 @@ El equipo de soporte.`,
     // Enviar correo
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.error('Error al enviar el correo:', error);
+        console.error('❌ Error al enviar el correo:', error);
         return res.status(500).json({
           success: false,
           message: 'Sesión modificada, pero no se pudo enviar el correo al paciente.',
         });
       }
-      console.log('Correo enviado:', info.response);
+      console.log('📧 Correo enviado:', info.response);
     });
 
-    // Responder al cliente
+    // Responder al cliente con la sesión actualizada
     res.json({ success: true, sesion });
   } catch (error) {
-    console.error('Error al modificar la sesión:', error);
+    console.error('❌ Error al modificar la sesión:', error);
     res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
   }
 });
+
+
 
 
 // Endpoint para eliminar una sesión
@@ -928,14 +1030,24 @@ app.get('/api/sesiones', async (req, res) => {
   try {
     console.log(`Obteniendo sesiones para terapeuta_id: ${terapeuta_id}`);
 
-    // Consulta para obtener las sesiones
+    // Consulta optimizada para obtener las sesiones
     const result = await db.query(
-      `SELECT c.id, c.paciente_id, c.terapeuta_id, c.fecha, c.descripcion, c.ejercicio_id, 
-              u.nombre AS paciente_nombre, u.apellidos AS paciente_apellidos, e.nombre AS ejercicio_nombre
+      `SELECT 
+        c.id, 
+        c.paciente_id, 
+        c.terapeuta_id, 
+        c.fecha, 
+        c.descripcion, 
+        u.nombre AS paciente_nombre, 
+        u.apellidos AS paciente_apellidos,
+        ARRAY_AGG(DISTINCT e.nombre) AS ejercicios
        FROM citas c
        JOIN usuarios u ON c.paciente_id = u.id
-       JOIN ejercicios e ON c.ejercicio_id = e.id
-       WHERE c.terapeuta_id = $1`,
+       LEFT JOIN citas_ejercicios ce ON c.id = ce.cita_id
+       LEFT JOIN ejercicios e ON ce.ejercicio_id = e.id
+       WHERE c.terapeuta_id = $1
+       GROUP BY c.id, u.nombre, u.apellidos
+       ORDER BY c.fecha DESC`,
       [terapeuta_id]
     );
 
@@ -945,6 +1057,11 @@ app.get('/api/sesiones', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
   }
 });
+
+
+
+
+
 
 
 // Ruta comodín para manejar solicitudes no encontradas

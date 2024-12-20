@@ -1,7 +1,6 @@
 <div class="asignar-sesiones-container">
     <div class="header-container">
         <h2>Asignar Sesiones</h2>
-        <!-- Campo de búsqueda -->
         <input 
             type="text" 
             placeholder="Buscar Paciente" 
@@ -11,12 +10,10 @@
     </div>
     <div class="background-image"></div>
 
-    <!-- Mostrar mensaje si no hay pacientes -->
     <div *ngIf="pacientesFiltrados.length === 0">
         <p>No se encontraron pacientes.</p>
     </div>
 
-    <!-- Mostrar tabla con pacientes si existen pacientes -->
     <table *ngIf="pacientesFiltrados.length > 0" class="tabla-pacientes">
         <thead>
             <tr>
@@ -42,7 +39,6 @@
         </tbody>
     </table>
 
-    <!-- Formulario para asignar una sesión -->
     <div *ngIf="pacienteSeleccionado" class="formulario-sesion">
         <h3>Asignar Sesión para: {{ pacienteSeleccionado.nombre }} {{ pacienteSeleccionado.apellidos }}</h3>
         <form (ngSubmit)="asignarSesion()">
@@ -57,17 +53,27 @@
             </div>
 
             <div class="form-group">
-                <label for="ejercicio_id">Ejercicio</label>
-                <select [(ngModel)]="nuevaSesion.ejercicio_id" name="ejercicio_id" id="ejercicio_id" required>
+                <label for="ejercicios">Agregar Ejercicio</label>
+                <select [(ngModel)]="ejercicioSeleccionado" name="ejercicioSeleccionado" id="ejercicioSeleccionado" (change)="agregarEjercicio()">
+                    <option value="" disabled selected>Seleccione un ejercicio</option>
                     <option *ngFor="let ejercicio of ejercicios" [value]="ejercicio.id">{{ ejercicio.nombre }}</option>
                 </select>
+            </div>
+
+            <div class="form-group">
+                <p><strong>Ejercicios seleccionados:</strong></p>
+                <ul>
+                    <li *ngFor="let ejercicioId of nuevaSesion.ejercicios">
+                        {{ obtenerNombreEjercicio(ejercicioId) }}
+                        <button (click)="eliminarEjercicio(ejercicioId)" class="btn-eliminar-ejercicio">❌</button>
+                    </li>
+                </ul>
             </div>
 
             <button type="submit" class="btn-asignar">Asignar Sesión</button>
         </form>
     </div>
 
-    <!-- Listado de sesiones asignadas -->
     <div class="sesiones-asignadas">
         <h3>Sesiones Asignadas</h3>
         <table *ngIf="sesionesAsignadas.length > 0" class="tabla-sesiones">
@@ -76,17 +82,22 @@
                     <th>Paciente</th>
                     <th>Fecha</th>
                     <th>Descripción</th>
-                    <th>Ejercicio</th>
+                    <th>Ejercicios</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 <tr *ngFor="let sesion of sesionesAsignadas">
-                    <td>{{ sesion.paciente_id }}</td>
-                    <!-- Usar el pipe date para formatear la fecha -->
+                    <td>{{ sesion.paciente_nombre }} {{ sesion.paciente_apellidos }}</td> 
                     <td>{{ sesion.fecha | date: 'dd/MM/yyyy' }}</td>
                     <td>{{ sesion.descripcion }}</td>
-                    <td>{{ sesion.ejercicio_id }}</td>
+                    <td>
+                        <ul>
+                          <li *ngFor="let ejercicioNombre of sesion.ejercicios">
+                            {{ ejercicioNombre }}
+                          </li>
+                        </ul>
+                      </td>                      
                     <td>
                         <button class="btn-editar" (click)="editarSesion(sesion)">Editar</button>
                         <button class="btn-eliminar" (click)="eliminarSesion(sesion.id!)">Eliminar</button>
@@ -95,12 +106,10 @@
             </tbody>
         </table>
 
-        <!-- Mostrar mensaje si no hay sesiones asignadas -->
         <div *ngIf="sesionesAsignadas.length === 0">
             <p>No hay sesiones asignadas.</p>
         </div>
 
-        <!-- Formulario para editar una sesión -->
         <div *ngIf="sesionEditando" class="formulario-editar-sesion">
             <h3>Editando Sesión</h3>
             <form (ngSubmit)="guardarEdicion()">
@@ -115,10 +124,21 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="ejercicio_idEdit">Ejercicio</label>
-                    <select [(ngModel)]="sesionEditando.ejercicio_id" name="ejercicio_idEdit" id="ejercicio_idEdit" required>
+                    <label for="ejerciciosEdit">Agregar Ejercicio</label>
+                    <select [(ngModel)]="ejercicioSeleccionadoEdicion" name="ejercicioSeleccionadoEdicion" id="ejercicioSeleccionadoEdicion" (change)="agregarEjercicioEdicion()">
+                        <option value="" disabled selected>Seleccione un ejercicio</option>
                         <option *ngFor="let ejercicio of ejercicios" [value]="ejercicio.id">{{ ejercicio.nombre }}</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <p><strong>Ejercicios seleccionados:</strong></p>
+                    <ul>
+                        <li *ngFor="let ejercicioId of sesionEditando.ejercicios">
+                            {{ obtenerNombreEjercicio(ejercicioId) }}
+                            <button (click)="eliminarEjercicioEdicion(ejercicioId)" class="btn-eliminar-ejercicio">❌</button>
+                        </li>
+                    </ul>
                 </div>
 
                 <button type="submit" class="btn-guardar">Guardar Cambios</button>
@@ -127,6 +147,5 @@
         </div>
     </div>
 
-    <!-- Mostrar mensajes de error -->
     <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
 </div>
