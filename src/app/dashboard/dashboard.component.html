@@ -3,19 +3,31 @@
   <div class="background-image"></div>
 
   <!-- Título principal -->
-  <h2>Estadísticas de Encuestas</h2>
+  <h2>Estadísticas de Encuestas por Paciente</h2>
+
+  <!-- Filtro de búsqueda -->
+  <div class="busqueda-container">
+    <label for="busqueda">Buscar Paciente:</label>
+    <input
+      id="busqueda"
+      type="text"
+      [(ngModel)]="terminoBusqueda"
+      (input)="filtrarPacientes()"
+      placeholder="Ingresa el nombre del paciente"
+    />
+  </div>
 
   <!-- Filtros -->
   <div class="filtros">
-    <h3>Filtrar por Patología</h3>
-    <div *ngFor="let item of estadisticas">
+    <h3>Filtrar por Paciente</h3>
+    <div *ngFor="let item of estadisticasFiltradas">
       <label>
         <input
           type="checkbox"
-          (change)="togglePatologia(item.patologia)"
-          [checked]="patologiasSeleccionadas.includes(item.patologia)"
+          (change)="togglePaciente(item.nombre_paciente)"
+          [checked]="pacientesSeleccionados.includes(item.nombre_paciente)"
         />
-        {{ item.patologia || 'Sin Patología' }}
+        {{ item.nombre_paciente || 'Sin Nombre' }} - {{ item.rut_paciente || 'Sin RUT' }}
       </label>
     </div>
   </div>

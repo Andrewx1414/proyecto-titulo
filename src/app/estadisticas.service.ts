@@ -6,16 +6,24 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class EstadisticasService {
-  private apiUrl = 'http://localhost:3000/api/encuestas-estadisticas';
+  private apiUrlEstadisticas = 'http://localhost:3000/api/encuestas-estadisticas';
+  private apiUrlPorPatologia = 'http://localhost:3000/api/encuestas-por-patologia';
+  private apiUrlPorPaciente = 'http://localhost:3000/api/encuestas-por-paciente';
 
   constructor(private http: HttpClient) {}
 
+  // Método para obtener estadísticas generales
   getEstadisticas(): Observable<any> {
-    return this.http.get<any>(this.apiUrl);
+    return this.http.get<any>(this.apiUrlEstadisticas);
   }
   
+  // Método para obtener estadísticas por patología
   getEstadisticasPorPatologia(): Observable<any> {
-    return this.http.get<any>('http://localhost:3000/api/encuestas-por-patologia');
+    return this.http.get<any>(this.apiUrlPorPatologia);
   }
   
+  // Método para obtener estadísticas por paciente
+  getEstadisticasPorPaciente(): Observable<any> {
+    return this.http.get<any>(this.apiUrlPorPaciente);
+  }
 }

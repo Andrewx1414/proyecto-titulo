@@ -40,7 +40,7 @@ export class DashboardPacienteComponent implements OnInit, OnDestroy {
   ejerciciosDelDia: any[] = [];
   ejercicioSeleccionado: any = null;
   videoSeguro: SafeResourceUrl | null = null;
-  tiempoRestante: number = 3600; // En segundos
+  tiempoRestante: number = 3600; // 1 hora en segundos
   cuentaRegresiva: any = null;
   encuesta = { dificultad: 1, dolor: 1, satisfaccion: 1, comentario: '' };
 
@@ -78,7 +78,7 @@ export class DashboardPacienteComponent implements OnInit, OnDestroy {
       tieneCita: false,
       ejercicios: [],
       bloqueado: false,
-      tiempoRestante: 3600 // Inicialmente 60 minutos para cada día con cita
+      tiempoRestante: 3600
     }));
 
     if (this.pacienteId) {
@@ -108,29 +108,56 @@ export class DashboardPacienteComponent implements OnInit, OnDestroy {
       alert('Este día ya está bloqueado. No puedes volver a entrar.');
       return;
     }
-
+  
     if (dia.tieneCita) {
       this.diaSeleccionado = dia.dia;
       this.ejerciciosDelDia = dia.ejercicios || [];
-      this.tiempoRestante = dia.tiempoRestante;
+      this.tiempoRestante = dia.tiempoRestante; // Recuperar el tiempo restante correctamente
+      console.log('Tiempo restante al abrir el modal:', this.tiempoRestante); // Verificar valor inicial
       this.iniciarCuentaRegresiva(dia);
       this.mostrarModal = true;
     }
   }
+  
 
   cerrarModal(): void {
     const diaActual = this.diasDelMes.find(d => d.dia === this.diaSeleccionado);
     if (diaActual) {
       if (this.tiempoRestante === 0) {
-        diaActual.bloqueado = true; // Bloquear el día si el tiempo se agotó
+        diaActual.bloqueado = true; // Bloquear el día si el tiempo llegó a 0
       }
       diaActual.tiempoRestante = this.tiempoRestante; // Guardar el tiempo restante
+      console.log('Tiempo restante guardado al cerrar:', diaActual.tiempoRestante); // Verificar valor guardado
     }
-
+  
     this.mostrarModal = false;
     this.diaSeleccionado = null;
     this.ejerciciosDelDia = [];
-    clearInterval(this.cuentaRegresiva);
+    clearInterval(this.cuentaRegresiva); // Detener el intervalo
+  }
+  
+
+  iniciarCuentaRegresiva(dia: Dia): void {
+    if (this.cuentaRegresiva) {
+      clearInterval(this.cuentaRegresiva);
+    }
+  
+    this.cuentaRegresiva = setInterval(() => {
+      if (this.tiempoRestante > 0) {
+        this.tiempoRestante--;
+        dia.tiempoRestante = this.tiempoRestante;
+  
+        // Forzar la actualización de Angular
+        this.zone.run(() => {
+          this.cdr.detectChanges();
+        });
+      } else {
+        clearInterval(this.cuentaRegresiva);
+        this.tiempoRestante = 0;
+        dia.bloqueado = true;
+        this.cerrarModal();
+      }
+    }, 1000);
   }
 
   abrirModalEjercicio(ejercicio: any): void {
@@ -149,38 +176,65 @@ export class DashboardPacienteComponent implements OnInit, OnDestroy {
     this.videoSeguro = null;
   }
 
-  iniciarCuentaRegresiva(dia: Dia): void {
-    clearInterval(this.cuentaRegresiva);
+  abrirEncuesta(): void {
+    this.mostrarModalEncuesta = true;
+  }
 
-    this.cuentaRegresiva = setInterval(() => {
-      if (this.tiempoRestante > 0) {
-        this.tiempoRestante--;
-        dia.tiempoRestante = this.tiempoRestante;
-        this.zone.run(() => {
-          this.cdr.detectChanges();
-        });
-      } else {
-        clearInterval(this.cuentaRegresiva);
-        this.tiempoRestante = 0;
-        dia.bloqueado = true;
-        this.cerrarModal();
+  cerrarModalEncuesta(): void {
+    this.mostrarModalEncuesta = false;
+    this.encuesta = { dificultad: 1, dolor: 1, satisfaccion: 1, comentario: '' };
+  }
+
+  guardarEncuesta(): void {
+    console.log('pacienteId:', this.pacienteId);
+    console.log('ejerciciosSeleccionados:', this.ejerciciosDelDia);
+  
+    // Validar que pacienteId no sea null
+    if (this.pacienteId === null || !this.ejerciciosDelDia || this.ejerciciosDelDia.length === 0) {
+      console.error('Paciente o ejercicios no definidos.');
+      return;
+    }
+  
+    if (
+      this.encuesta.dificultad === undefined ||
+      this.encuesta.dolor === undefined ||
+      this.encuesta.satisfaccion === undefined
+    ) {
+      console.error('Campos de la encuesta incompletos:', this.encuesta);
+      return;
+    }
+  
+    // Crear el arreglo de encuestas
+    const encuestas = this.ejerciciosDelDia.map((ejercicio: any) => ({
+      paciente_id: this.pacienteId as number, // Forzar que paciente_id sea de tipo number
+      ejercicio_id: ejercicio.id as number, // Garantizar que ejercicio_id sea un número
+      dificultad: this.encuesta.dificultad,
+      dolor: this.encuesta.dolor,
+      satisfaccion: this.encuesta.satisfaccion,
+      comentario: this.encuesta.comentario,
+    }));
+  
+    console.log('Datos enviados a la API:', encuestas);
+  
+    this.pacienteService.guardarEncuesta(encuestas).subscribe(
+      (respuesta: { success: boolean; message: string }) => {
+        if (respuesta.success) {
+          console.log('Encuestas guardadas correctamente:', respuesta);
+          this.cerrarModalEncuesta();
+        } else {
+          console.error('Error al guardar las encuestas:', respuesta.message);
+        }
+      },
+      (error: any) => {
+        console.error('Error en el servidor al guardar las encuestas:', error);
       }
-    }, 1000);
+    );
   }
-
-  get tiempoRestanteMilisegundos(): number {
-    return this.tiempoRestante * 1000;
-  }
-
-  ngOnDestroy(): void {
-    clearInterval(this.cuentaRegresiva);
-  }
-
-  // Métodos faltantes
-  cerrarSesion(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
-  }
+  
+  
+  
+  
+  
 
   anteriorMes(): void {
     this.mesActual = new Date(this.mesActual.getFullYear(), this.mesActual.getMonth() - 1, 1);
@@ -192,37 +246,24 @@ export class DashboardPacienteComponent implements OnInit, OnDestroy {
     this.actualizarMes();
   }
 
-  abrirEncuesta(): void {
-    this.mostrarModalEncuesta = true;
+  cerrarSesion(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
-  cerrarModalEncuesta(): void {
-    this.mostrarModalEncuesta = false;
-    this.encuesta = { dificultad: 1, dolor: 1, satisfaccion: 1, comentario: '' };
+  formatTiempoRestante(segundos: number): string {
+    const horas = Math.floor(segundos / 3600);
+    const minutos = Math.floor((segundos % 3600) / 60);
+    const segundosRestantes = segundos % 60;
+    return `${this.pad(horas)}:${this.pad(minutos)}:${this.pad(segundosRestantes)}`;
   }
+  
+  private pad(valor: number): string {
+    return valor < 10 ? `0${valor}` : `${valor}`;
+  }
+  
 
-  guardarEncuesta(): void {
-    if (this.pacienteId && this.ejercicioSeleccionado?.id) {
-      const datosEncuesta = {
-        paciente_id: this.pacienteId,
-        ejercicio_id: this.ejercicioSeleccionado.id,
-        ...this.encuesta
-      };
-
-      this.pacienteService.guardarEncuesta(datosEncuesta).subscribe(
-        (respuesta: { success: boolean; message: string }) => {
-          if (respuesta.success) {
-            this.cerrarModalEncuesta();
-          } else {
-            console.error('Error al guardar la encuesta:', respuesta.message);
-          }
-        },
-        (error: any) => {
-          console.error('Error en el servidor al guardar la encuesta:', error);
-        }
-      );
-    } else {
-      console.error('Datos insuficientes para guardar la encuesta.');
-    }
+  ngOnDestroy(): void {
+    clearInterval(this.cuentaRegresiva);
   }
 }

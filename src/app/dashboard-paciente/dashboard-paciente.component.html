@@ -35,8 +35,7 @@
         <h4>Ejercicios asignados para el día {{ diaSeleccionado }}</h4>
 
         <!-- Contador único para todo el modal -->
-        <p class="countdown">Tiempo restante para ejercicios: {{ tiempoRestante | date: 'HH:mm:ss':'UTC' }}</p>
-
+        <p class="countdown">Tiempo restante para ejercicios: {{ formatTiempoRestante(tiempoRestante) }}</p>
         <!-- Lista de ejercicios -->
         <div *ngIf="ejerciciosDelDia.length > 0">
           <ul>
@@ -89,25 +88,26 @@
             <option *ngFor="let i of [1, 2, 3, 4, 5, 6, 7]" [value]="i">{{ i }}</option>
           </select>
         </div>
-
+        
         <div class="form-group">
           <label for="dolor">¿Qué nivel de dolor experimentaste durante los ejercicios? (1: Sin dolor, 7: Mucho dolor)</label>
           <select id="dolor" [(ngModel)]="encuesta.dolor" class="form-control">
             <option *ngFor="let i of [1, 2, 3, 4, 5, 6, 7]" [value]="i">{{ i }}</option>
           </select>
         </div>
-
+        
         <div class="form-group">
           <label for="satisfaccion">¿Qué tan satisfecho estás con los ejercicios realizados? (1: Muy insatisfecho, 7: Muy satisfecho)</label>
           <select id="satisfaccion" [(ngModel)]="encuesta.satisfaccion" class="form-control">
             <option *ngFor="let i of [1, 2, 3, 4, 5, 6, 7]" [value]="i">{{ i }}</option>
           </select>
         </div>
-
+        
         <div class="form-group">
           <label for="comentario">Comentarios adicionales</label>
           <textarea id="comentario" [(ngModel)]="encuesta.comentario" class="form-control" rows="3"></textarea>
         </div>
+        
 
         <button class="submit-button" (click)="guardarEncuesta()">Enviar Encuesta</button>
       </div>

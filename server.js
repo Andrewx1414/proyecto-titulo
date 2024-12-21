@@ -466,33 +466,52 @@ app.get('/api/ejercicio/:id', async (req, res) => {
 
 // Endpoint para guardar una encuesta
 app.post('/api/encuestas', async (req, res) => {
-  const { paciente_id, ejercicio_id, dificultad, dolor, satisfaccion, comentario } = req.body;
-  console.log('Body recibido:', req.body);
+  const encuestas = req.body;
+  console.log('Body recibido:', encuestas);
 
-  // Verificar que todos los campos requeridos estén presentes
-  if (!paciente_id || !ejercicio_id || dificultad === undefined || dolor === undefined || satisfaccion === undefined) {
-    
-    console.log('Campos faltantes en la solicitud de encuesta');
-    
-    return res.status(400).json({ success: false, message: 'Todos los campos son requeridos (paciente_id, ejercicio_id, dificultad, dolor, satisfaccion).' });
+  // Validar que el arreglo no esté vacío
+  if (!Array.isArray(encuestas) || encuestas.length === 0) {
+    console.log('No se recibieron encuestas.');
+    return res.status(400).json({
+      success: false,
+      message: 'Debe enviarse un arreglo de encuestas con datos válidos.',
+    });
   }
 
   try {
-    console.log(`Guardando encuesta para paciente ${paciente_id}, ejercicio ${ejercicio_id}`);
-    
-    // Insertar la encuesta en la base de datos
-    const result = await db.query(
-      `INSERT INTO encuestas (paciente_id, ejercicio_id, fecha, dificultad, dolor, satisfaccion, comentario)
-       VALUES ($1, $2, NOW(), $3, $4, $5, $6) RETURNING *`,
-      [paciente_id, ejercicio_id, dificultad, dolor, satisfaccion, comentario]
-    );
+    const resultados = [];
 
-    res.json({ success: true, encuesta: result.rows[0] });
+    // Insertar cada encuesta en la base de datos
+    for (const encuesta of encuestas) {
+      const { paciente_id, ejercicio_id, dificultad, dolor, satisfaccion, comentario } = encuesta;
+
+      if (!paciente_id || !ejercicio_id || dificultad === undefined || dolor === undefined || satisfaccion === undefined) {
+        console.log('Campos faltantes en la encuesta:', encuesta);
+        return res.status(400).json({
+          success: false,
+          message: 'Todos los campos son requeridos (paciente_id, ejercicio_id, dificultad, dolor, satisfaccion).',
+        });
+      }
+
+      console.log(`Guardando encuesta para paciente ${paciente_id}, ejercicio ${ejercicio_id}`);
+
+      const result = await db.query(
+        `INSERT INTO encuestas (paciente_id, ejercicio_id, fecha, dificultad, dolor, satisfaccion, comentario)
+         VALUES ($1, $2, NOW(), $3, $4, $5, $6) RETURNING *`,
+        [paciente_id, ejercicio_id, dificultad, dolor, satisfaccion, comentario]
+      );
+
+      resultados.push(result.rows[0]);
+    }
+
+    res.json({ success: true, encuestas: resultados });
   } catch (error) {
-    console.error('Error al guardar la encuesta:', error);
+    console.error('Error al guardar las encuestas:', error);
     res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
   }
 });
+
+
 
 // Endpoint para obtener datos estadísticos de encuestas
 app.get('/api/encuestas-estadisticas', async (req, res) => {
@@ -512,27 +531,31 @@ app.get('/api/encuestas-estadisticas', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
   }
 });
-//agregar tambien el filtro por ejercicio
-app.get('/api/encuestas-por-patologia', async (req, res) => {
+//agregar tambien el filtro por paciente
+app.get('/api/encuestas-por-paciente', async (req, res) => {
   try {
     const result = await db.query(`
-      SELECT u.patologia, 
+      SELECT u.id AS paciente_id,
+             u.nombre AS nombre_paciente,
+             u.rut AS rut_paciente,
              AVG(e.dificultad) AS promedio_dificultad,
              AVG(e.dolor) AS promedio_dolor,
              AVG(e.satisfaccion) AS promedio_satisfaccion,
              COUNT(e.id) AS total_encuestas
       FROM encuestas e
       INNER JOIN usuarios u ON e.paciente_id = u.id
-      GROUP BY u.patologia
-      ORDER BY u.patologia
+      GROUP BY u.id, u.nombre, u.rut
+      ORDER BY u.nombre
     `);
 
     res.json({ success: true, data: result.rows });
   } catch (error) {
-    console.error('Error al obtener estadísticas por patología:', error);
+    console.error('Error al obtener estadísticas por paciente:', error);
     res.status(500).json({ success: false, message: 'Error en el servidor', error: error.message });
   }
 });
+
+
 
 app.delete('/api/usuarios/:id', async (req, res) => {
   const usuarioId = Number(req.params.id);

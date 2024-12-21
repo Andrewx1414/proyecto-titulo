@@ -59,19 +59,21 @@ export class PacienteService {
   }
 
   // Guardar una encuesta en el servidor
-  guardarEncuesta(encuesta: {
-    paciente_id: number;
-    ejercicio_id: number;
-    dificultad: number;
-    dolor: number;
-    satisfaccion: number;
-    comentario: string;
-  }): Observable<RespuestaEncuesta> {
-    return this.http.post<RespuestaEncuesta>(this.apiUrlEncuestas, encuesta)
-      .pipe(
-        catchError(this.manejarError)
-      );
-  }
+// Guardar una o múltiples encuestas en el servidor
+guardarEncuesta(encuestas: {
+  paciente_id: number;
+  ejercicio_id: number;
+  dificultad: number;
+  dolor: number;
+  satisfaccion: number;
+  comentario: string;
+}[]): Observable<RespuestaEncuesta> {
+  return this.http.post<RespuestaEncuesta>(this.apiUrlEncuestas, encuestas)
+    .pipe(
+      catchError(this.manejarError)
+    );
+}
+
 
   // Método privado para manejar errores
   private manejarError(error: HttpErrorResponse): Observable<never> {
