@@ -6,9 +6,9 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class EstadisticasService {
-  private apiUrlEstadisticas = 'http://localhost:3000/api/encuestas-estadisticas';
-  private apiUrlPorPatologia = 'http://localhost:3000/api/encuestas-por-patologia';
-  private apiUrlPorPaciente = 'http://localhost:3000/api/encuestas-por-paciente';
+  private apiUrlEstadisticas = 'http://54.215.133.125:3000/api/encuestas-estadisticas';
+  private apiUrlPorPatologia = 'http://54.215.133.125:3000/api/encuestas-por-patologia';
+  private apiUrlPorPaciente = 'http://54.215.133.125:3000/api/encuestas-por-paciente';
 
   constructor(private http: HttpClient) {}
 

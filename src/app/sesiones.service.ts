@@ -18,7 +18,7 @@ export interface Sesion {
   providedIn: 'root'
 })
 export class SesionesService {
-  public apiUrl = 'http://localhost:3000/api'; // 🔥 URL de la API ahora pública para uso en el componente
+  public apiUrl = 'http://54.215.133.125:3000/api'; // 🔥 URL de la API ahora pública para uso en el componente
 
   constructor(private http: HttpClient) { }
 

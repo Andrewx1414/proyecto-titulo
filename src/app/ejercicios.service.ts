@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class EjerciciosService {
-  private apiUrl = 'http://localhost:3000/api/ejercicios'; // URL del endpoint para ejercicios
+  private apiUrl = 'http://54.215.133.125:3000/api/ejercicios'; // URL del endpoint para ejercicios
 
   constructor(private http: HttpClient) {}
 

@@ -36,9 +36,9 @@ interface RespuestaEncuesta {
   providedIn: 'root'
 })
 export class PacienteService {
-  private apiUrlCitas = 'http://localhost:3000/api/citas'; // Endpoint para citas
-  private apiUrlEjercicio = 'http://localhost:3000/api/ejercicio'; // Endpoint para ejercicios
-  private apiUrlEncuestas = 'http://localhost:3000/api/encuestas'; // Endpoint para encuestas
+  private apiUrlCitas = 'http://54.215.133.125:3000/api/citas'; // Endpoint para citas
+  private apiUrlEjercicio = 'http://54.215.133.125:3000/api/ejercicio'; // Endpoint para ejercicios
+  private apiUrlEncuestas = 'http://54.215.133.125:3000/api/encuestas'; // Endpoint para encuestas
 
   constructor(private http: HttpClient) {}
 

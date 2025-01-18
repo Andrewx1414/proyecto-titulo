@@ -7,7 +7,7 @@ export const options = {
 };
 
 export default function () {
-  const url = 'http://localhost:3000/api/usuarios';
+  const url = 'http://54.215.133.125:3000/api/usuarios';
   http.get(url);
   sleep(1);
 }

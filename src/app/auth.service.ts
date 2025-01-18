@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:3000/api/login';
+  private apiUrl = 'http://54.215.133.125:3000/api/login';
   private usuarioKey = 'user'; // Clave consistente para el almacenamiento en localStorage
 
   constructor(private http: HttpClient) {}
