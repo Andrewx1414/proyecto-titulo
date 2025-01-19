@@ -102,6 +102,17 @@
         placeholder="Ingrese el correo electrónico"
       />
     </div>
+    <div class="form-group">
+      <label for="password">Contraseña</label>
+      <input
+        type="password"
+        [(ngModel)]="nuevoUsuario.password"
+        name="password"
+        id="password"
+        required
+        placeholder="Ingrese la contraseña"
+      />
+    </div>
 
     <!-- Campos específicos para pacientes -->
     <div *ngIf="esPaciente || tipoUsuarioLogueado === 'terapeuta'">
