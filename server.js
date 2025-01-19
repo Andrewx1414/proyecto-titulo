@@ -97,14 +97,8 @@ app.post('/api/usuarios', async (req, res) => {
           <li><strong>Contraseña:</strong> ${password}</li>
         </ul>
         <p>Atte.<br><strong>Administración MaacKinesiología Talca</strong></p>
-      `,
-      attachments: [
-        {
-          filename: 'manual_de_usuario.mp4',
-          path: 'C:\\Users\\andre\\OneDrive\\Escritorio\\AppKine\\videos\\manual_de_usuario.mp4',
-          contentType: 'video/mp4',
-        },
-      ],
+      `
+      
     };
 
 
