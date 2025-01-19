@@ -360,7 +360,7 @@ El equipo de soporte.
           <li><strong>Descripción:</strong> ${descripcion}</li>
           <li><strong>Videos Asignados:</strong> ${listaDeEjercicios}</li>
         </ul>
-        <p>Por favor, asegúrate de conectarte en las horas indicadas por tu terapeuta.</p>
+        <p>Por favor, asegúrate de conectarte en un monento del dia que tengas tiempo de realizar tus ejercicios ya que dispones de 1 hora para realizar tu sesion.</p>
         <p>Atte.<br>Administración MaacKinesiología Talca.</p>
       `
     };
